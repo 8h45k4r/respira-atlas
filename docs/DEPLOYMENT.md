@@ -64,9 +64,10 @@ Assets. It sets security headers and cache policy: hashed assets under
 `/assets/` are immutable, and files under `/data/` revalidate hourly so a
 redeploy is picked up without a hard refresh.
 
-`public/_redirects` carries the same SPA rule as a fallback. It is redundant
-alongside `not_found_handling` but harmless, and it keeps the project portable
-to the Pages workflow unchanged.
+There is deliberately **no** `public/_redirects` file. The Pages-style
+`/* /index.html 200` rewrite is invalid on Workers Static Assets and fails the
+deploy outright; `not_found_handling` is the mechanism there. See
+[SPA-ROUTING.md](SPA-ROUTING.md).
 
 The Content-Security-Policy allows only this origin plus Google Fonts. There is
 no `connect-src` beyond `'self'`, because the site makes no third-party requests
@@ -118,5 +119,6 @@ the repository, and set:
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 
-`public/_redirects` supplies the SPA fallback there, and `wrangler.jsonc` is
-ignored.
+Pages ignores `wrangler.jsonc` and has no `not_found_handling` setting, so add
+`public/_redirects` containing `/*  /index.html  200` for the SPA fallback. See
+[SPA-ROUTING.md](SPA-ROUTING.md).

@@ -178,6 +178,7 @@ key is inserted. Exported figures come from this application's own SVG renderer.
 - [Known limitations and unsupported coverage](docs/LIMITATIONS.md)
 - [Licensing and attribution](docs/LICENSING.md)
 - [Deployment](docs/DEPLOYMENT.md)
+- [SPA routing on Cloudflare](docs/SPA-ROUTING.md)
 - [Testing](docs/TESTING.md)
 
 ## Licence
