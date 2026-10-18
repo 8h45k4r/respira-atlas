@@ -1,0 +1,17 @@
+# Cloudflare Pages response headers.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  # No runtime backend, no secrets, no third-party calls at runtime: everything
+  # the page needs is served from this origin, except the webfonts.
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'none'
+
+# Hashed build assets are immutable.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Data files are versioned by the manifest; revalidate so a redeploy is picked up.
+/data/*
+  Cache-Control: public, max-age=3600, must-revalidate

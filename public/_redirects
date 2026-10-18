@@ -1,0 +1,5 @@
+# Cloudflare Pages SPA fallback.
+# Analytical state lives in the query string, so every route is served by
+# index.html and resolved on the client. 200 (rewrite), not 302, so a shared
+# deep link keeps its URL.
+/*  /index.html  200

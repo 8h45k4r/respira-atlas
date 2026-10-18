@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    /* Figure text sizes are configurable for export; defaults match the screen. */
+    --figure-title: 15px;
+    --figure-body: 12px;
+    --figure-small: 10.5px;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Visible, high-contrast focus on every interactive element. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-teal-700 ring-offset-2 ring-offset-background;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-sans tracking-[-0.011em] text-navy-900;
+    text-wrap: balance;
+  }
+
+  /* Numerals in tables and figures must align vertically. */
+  table, .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+}
+
+@layer components {
+  /* Thin dividers and strong typography carry the hierarchy. */
+  .rule {
+    @apply border-t border-slate-200;
+  }
+
+  .panel {
+    @apply border border-slate-200 bg-white;
+  }
+
+  .label-caps {
+    @apply text-2xs font-semibold uppercase tracking-[0.07em] text-slate-500;
+  }
+
+  .figure-meta {
+    @apply font-figure text-2xs leading-relaxed text-slate-600;
+  }
+
+  .prose-evidence {
+    @apply text-sm leading-relaxed text-slate-700;
+  }
+  .prose-evidence strong {
+    @apply font-semibold text-navy-900;
+  }
+
+  /* Skip link, visible only when focused. */
+  .skip-link {
+    @apply absolute left-4 top-0 z-50 -translate-y-full bg-navy-900 px-4 py-2 text-sm
+           font-medium text-white transition-transform focus:translate-y-2;
+  }
+
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    @apply sr-only;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply rounded bg-slate-300;
+  }
+}
+
+/*
+ * Motion is used only for orientation, navigation and state change. Under a
+ * reduced-motion preference it is removed rather than merely shortened.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print: the briefing must be legible on A4 without the interface around it. */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 14mm;
+  }
+  html, body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-page-break {
+    break-after: page;
+  }
+  .panel {
+    border-color: #94a3b8 !important;
+  }
+  a[href]::after {
+    content: '';
+  }
+}
+
+.print-only {
+  display: none;
+}
