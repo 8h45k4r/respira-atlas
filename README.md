@@ -77,6 +77,12 @@ trend, dot-and-whisker comparison, inequality breakdown, exposure/outcome
 scatter, and a fully keyboard-operable data table that does everything the map
 does.
 
+**Evidence stories** — four questions worked end to end: the pattern, how much
+of it survives the uncertainty, and what it cannot establish. The framing is
+authored; **every number in the prose is computed from the observations when the
+page renders**, and a story whose computation cannot be satisfied reports itself
+unavailable rather than falling back on a remembered result.
+
 **Explain a finding** — turns one selection into a defensible statement:
 descriptive headline, annotated map, comparison, interpretation, uncertainty,
 provenance, and the questions that remain open. Includes an explicit panel on
@@ -131,8 +137,8 @@ The prepared dataset is committed, so the app runs offline with no API access.
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` | Production build to `dist/` |
-| `npm test` | 75 unit tests |
-| `npm run smoke` | 26 browser tests against the production build |
+| `npm test` | 94 unit tests |
+| `npm run smoke` | 29 browser tests against the production build |
 | `npm run data:validate` | Checks the committed dataset for violations |
 | `npm run data:prepare` | Re-fetches everything from source (~3 minutes) |
 
@@ -140,10 +146,10 @@ The prepared dataset is committed, so the app runs offline with no API access.
 
 All of the following were run and passed on the committed tree:
 
-- **75 unit tests** — classification and breakpoints, benchmark comparison,
+- **94 unit tests** — classification and breakpoints, benchmark comparison,
   comparability gating, the missing/suppressed/zero distinction, evidence-statement
   eligibility, URL round trips, columnar decode integrity, and SVG export content.
-- **26 browser tests** — discovery driven by real metadata, an accurate
+- **29 browser tests** — discovery driven by real metadata, evidence stories computing consistent figures from the data and exporting genuine vector, an accurate
   multi-profile coverage statement, topic entry points, UK-only map, all four
   nations present, out-of-coverage nations visibly unsupported, city search
   disambiguation, drill-down and Back, shared-URL restoration, keyboard area
@@ -192,6 +198,7 @@ key is inserted. Exported figures come from this application's own SVG renderer.
 - [Implementation plan and verified assumptions](docs/IMPLEMENTATION-PLAN.md) — what was checked against live sources before any code was written
 - [Data sources and preparation](docs/DATA.md)
 - [Methods and statistical rules](docs/METHODS.md)
+- [Evidence stories](docs/STORIES.md)
 - [Known limitations and unsupported coverage](docs/LIMITATIONS.md)
 - [Licensing and attribution](docs/LICENSING.md)
 - [Deployment](docs/DEPLOYMENT.md)

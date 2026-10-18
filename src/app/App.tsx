@@ -5,6 +5,7 @@ import { DEFAULT_STATE, type AtlasMode } from '@/state/atlas-state';
 import { AppHeader } from './AppHeader';
 import { DiscoverView } from '@/features/discover/DiscoverView';
 import { ExploreView } from '@/features/atlas/ExploreView';
+import { StoriesView } from '@/features/stories/StoriesView';
 import { ExplainView } from '@/features/evidence-stories/ExplainView';
 import { BriefingView } from '@/features/briefing/BriefingView';
 import { MethodsView } from '@/features/methods/MethodsView';
@@ -57,6 +58,8 @@ export function App() {
             onChange={patch}
             onReset={reset}
           />
+        ) : state.mode === 'stories' ? (
+          <StoriesView catalogue={catalogue.value} state={state} onChange={patch} />
         ) : state.mode === 'explain' ? (
           <ExplainView catalogue={catalogue.value} state={state} onChange={patch} />
         ) : state.mode === 'briefing' ? (

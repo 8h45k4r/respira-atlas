@@ -174,9 +174,9 @@ export function DiscoverView({
                 variant="outline"
                 size="sm"
                 className="mt-3"
-                onClick={() => onChange({ mode: 'explain' })}
+                onClick={() => onChange({ mode: 'stories' })}
               >
-                Open the evidence workspace
+                Read the evidence stories
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Button>
             }

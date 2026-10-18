@@ -65,14 +65,16 @@ that a direct comparison would not be valid even once the data were in hand.
 
 ## Expansion work not yet done
 
+- **Evidence stories are four, not a library.** Each is tied to specific
+  indicators; if a future release drops one, that story reports itself
+  unavailable rather than adapting. They are deliberately about method rather
+  than about policy conclusions.
+
 - **Dedicated modes** for population comparison, change over time and
   inequalities. The underlying analysis exists — the workspace already carries
   a trend figure, a dot-and-whisker comparison, an inequality panel and a
   relationships scatter — but they are panels inside the place explorer rather
   than first-class modes with their own framing.
-- **Evidence stories** as authored, data-backed narratives. The "Explain a
-  finding" workspace produces the same material for any selection, but there is
-  no curated set of worked questions.
 - **Chart patterns** named in the brief that are not built: population pyramid
   (needs compatible denominator data this release does not carry), heatmap of
   age × time, treemap, and annotated charts.

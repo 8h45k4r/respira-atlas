@@ -2,7 +2,7 @@ import type { ClassificationMethod } from '@/data/selectors/classification';
 import type { GeographyMode } from '@/geography/model';
 
 export type AtlasMode =
-  | 'discover' | 'explore' | 'explain' | 'briefing' | 'methods' | 'coverage';
+  | 'discover' | 'explore' | 'stories' | 'explain' | 'briefing' | 'methods' | 'coverage';
 
 /**
  * The complete analytical state. Everything that changes what a reader sees is
@@ -83,7 +83,7 @@ const KEYS = {
 } as const;
 
 const MODES: readonly AtlasMode[] = [
-  'discover', 'explore', 'explain', 'briefing', 'methods', 'coverage',
+  'discover', 'explore', 'stories', 'explain', 'briefing', 'methods', 'coverage',
 ];
 const GEOGRAPHY_MODES: readonly GeographyMode[] = ['administrative', 'nhs'];
 const CLASSIFICATIONS: readonly ClassificationMethod[] = [

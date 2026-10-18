@@ -23,6 +23,9 @@ export function displayDecimals(
   const magnitude = Math.abs(value);
   if (indicator.unit === '%') return magnitude >= 10 ? 1 : 2;
   if (indicator.unit === 'µg/m3') return 1;
+  // Life expectancy is conventionally quoted to one decimal; a second decimal
+  // implies a precision of days that the estimate does not carry.
+  if (normalisedUnit(indicator) === 'years') return 1;
   if (magnitude >= 1000) return 0;
   if (magnitude >= 100) return 1;
   if (magnitude >= 1) return 2;
@@ -36,7 +39,19 @@ export function formatWithUnit(
   const formatted = formatValue(value, indicator);
   if (!indicator.unit) return formatted;
   if (indicator.unit === '%') return `${formatted}%`;
-  return `${formatted} ${indicator.unit}`;
+  return `${formatted} ${normalisedUnit(indicator)}`;
+}
+
+/**
+ * Units as they should read in a sentence.
+ *
+ * The source capitalises some units as headings ("Years"), which reads wrongly
+ * mid-sentence. Only purely alphabetic units are lowercased, so symbols and
+ * compound units such as µg/m3 and "per 100,000" are left exactly as published.
+ */
+function normalisedUnit(indicator: Pick<Indicator, 'unit'>): string {
+  const unit = indicator.unit ?? '';
+  return /^[A-Za-z ]+$/.test(unit) ? unit.toLowerCase() : unit;
 }
 
 export function formatCount(value: number): string {
@@ -68,7 +83,7 @@ export function unitLabel(indicator: Pick<Indicator, 'unit' | 'valueType'>): str
     return indicator.valueType ? indicator.valueType.toLowerCase() : 'value';
   }
   if (indicator.unit === '%') return 'per cent';
-  return indicator.unit;
+  return normalisedUnit(indicator);
 }
 
 export function measureTypeLabel(indicator: Pick<Indicator, 'valueType'>): string {

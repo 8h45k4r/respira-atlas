@@ -6,10 +6,11 @@ Reproduce with `npm test`, `npm run smoke` and `npm run data:validate`.
 ## What is covered
 
 **Unit tests** (`tests/unit/`, Vitest) cover the pure analytical layer — the
-code shared by the interface and by exports: classification and breakpoints,
-benchmark comparison, the comparability gate, the missing/suppressed/zero
-distinction, evidence-statement eligibility, URL round trips, columnar decode
-integrity, and SVG export content.
+code shared by the interface, the evidence stories and the exports:
+classification and breakpoints, benchmark comparison, the comparability gate,
+the missing/suppressed/zero distinction, evidence-statement eligibility, URL
+round trips, columnar decode integrity, SVG export content, and the story
+computations.
 
 **Browser tests** (`tests/smoke/`, Playwright) run against the **production
 build** served by `vite preview`, exercising the same bundle, asset paths and
@@ -20,9 +21,9 @@ SPA fallback Cloudflare serves. Any console error fails the run.
 ### Unit tests
 
 ```
-      Tests  75 passed (75)
-   Start at  15:02:04
-   Duration  978ms (transform 482ms, setup 0ms, collect 842ms, tests 268ms, environment 0ms, prepare 344ms)
+      Tests  94 passed (94)
+   Start at  15:33:21
+   Duration  938ms (transform 524ms, setup 0ms, collect 932ms, tests 264ms, environment 1ms, prepare 391ms)
 
 ```
 
@@ -46,8 +47,11 @@ SPA fallback Cloudflare serves. Any console error fails the run.
   PASS  area comparison uses compatible observations only — compared
   PASS  a measure with no combined figure says so and offers the choice — population choice required and explained
   PASS  an indicator unavailable at this geography is disabled, with a reason — 7 disabled with reasons
+  PASS  evidence stories compute their figures from the data — range and 135 compared areas, computed
+  PASS  a story figure exports genuine vector SVG — 218 paths
+  PASS  a story that loses its data says so instead of rendering — guarded and explained
   PASS  SVG download works and contains real vector content — 219 paths, 24 text nodes
-  PASS  PNG download works and is a real raster — 846 kB
+  PASS  PNG download works and is a real raster — 839 kB
   PASS  CSV download works and states availability per row — 153 rows
   PASS  figure specification JSON downloads and is reproducible — 218 areas, 4 breaks
   PASS  coverage matrix renders every status — all statuses documented
@@ -57,7 +61,7 @@ SPA fallback Cloudflare serves. Any console error fails the run.
   PASS  SPA fallback serves a deep link — index.html served
   PASS  no console errors during the run — clean
 
-26/26 browser smoke tests passed.
+29/29 browser smoke tests passed.
 ```
 
 ### Data validation
@@ -67,18 +71,18 @@ SPA fallback Cloudflare serves. Any console error fails the run.
   OK — no violations
 ```
 
-## Checked manually in a browser
+## Notable behaviours pinned by tests
 
-- Discovery renders from real metadata; publication dates are distinguished
-  from observation periods and from the dataset preparation date.
-- Life expectancy, which has no combined series, reports that it is published
-  separately by sex and requires the reader to choose.
-- The UK fits the initial viewport including Northern Ireland and the Scottish
-  islands, with no world basemap or globe.
-- Selecting an area updates map, detail panel, charts, table and URL together.
-- The export preview shows the file that downloads, from the same renderer.
-- The scatter view refuses to plot PM2.5 against pooled mortality because the
-  periods differ, and plots 152 points once both sit in the single-year series.
+- A published value of **zero** is counted as present, never as missing, in both
+  the decoder and the story computations.
+- A range summary returns a **null ratio** against a zero minimum rather than
+  reporting infinity.
+- Two measures that share **no period** cannot be paired for a scatter.
+- Story prose is checked for **internal consistency**, not just presence: the
+  computed maximum must exceed the minimum, and the number of areas reported
+  indistinguishable cannot exceed the number compared.
+- A story figure's exported SVG must contain real vector paths and its licence
+  note, and no raster.
 
 ## Not covered by automated tests
 
@@ -87,4 +91,3 @@ SPA fallback Cloudflare serves. Any console error fails the run.
   and checked, but no external audit has been run.
 - Cross-browser testing beyond Chromium.
 - Visual regression testing of figure layout.
-- Performance profiling under throttled networks.

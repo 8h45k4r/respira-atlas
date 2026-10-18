@@ -1,4 +1,4 @@
-import { Map, FileText, Printer, BookOpen, Grid3x3, Compass } from 'lucide-react';
+import { Map, FileText, Printer, BookOpen, Grid3x3, Compass, Library } from 'lucide-react';
 import type { Manifest } from '@/data/schemas/manifest';
 import type { AtlasMode } from '@/state/atlas-state';
 import { Badge } from '@/components/ui/misc';
@@ -7,10 +7,11 @@ import { cn } from '@/lib/utils';
 const MODES: { value: AtlasMode; label: string; icon: typeof Map; hint: string }[] = [
   { value: 'discover', label: 'Start here', icon: Compass, hint: 'Ways into the data' },
   { value: 'explore', label: 'Explore places', icon: Map, hint: 'Map-led workspace' },
+  { value: 'stories', label: 'Evidence stories', icon: BookOpen, hint: 'Questions worked end to end' },
   { value: 'explain', label: 'Explain a finding', icon: FileText, hint: 'Build a defensible statement' },
   { value: 'briefing', label: 'Prepare a briefing', icon: Printer, hint: 'Compose a publication figure' },
   { value: 'coverage', label: 'Coverage', icon: Grid3x3, hint: 'What is published where' },
-  { value: 'methods', label: 'Methods', icon: BookOpen, hint: 'Definitions and limits' },
+  { value: 'methods', label: 'Methods', icon: Library, hint: 'Definitions and limits' },
 ];
 
 export function AppHeader({

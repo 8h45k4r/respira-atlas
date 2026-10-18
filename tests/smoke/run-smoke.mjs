@@ -332,6 +332,72 @@ async function main() {
       return `${disabled} disabled with reasons`;
     });
 
+    // -------------------------------------------------------------- stories
+    await check('evidence stories compute their figures from the data', async () => {
+      await page.goto(`${BASE}/?v=stories`, { waitUntil: 'networkidle' });
+      await page.waitForSelector('text=Questions worked through end to end', { timeout: 30_000 });
+      const count = await page.locator('h3:near(:text("Evidence story"))').count();
+      assert(count >= 0, 'story index did not render');
+
+      await page.locator('button:has-text("A wide range")').first().click();
+      await page.waitForSelector('text=What the map shows', { timeout: 45_000 });
+      const body = await page.textContent('article');
+
+      // Numbers must be present and internally consistent, not placeholders.
+      const range = /ranges from ([\d.]+) per 100,000 in .+ to ([\d.]+) per 100,000 in /.exec(body ?? '');
+      assert(range, 'the range sentence carries no computed values');
+      assert(Number(range[2]) > Number(range[1]), 'the computed range is not ordered');
+
+      const flags = /Of the (\d+) areas it compared, (\d+)/.exec(body ?? '');
+      assert(flags, 'the significance sentence carries no computed values');
+      assert(
+        Number(flags[2]) <= Number(flags[1]),
+        'more areas are reported indistinguishable than were compared',
+      );
+
+      assert(
+        /publisher’s flags, reproduced as supplied/i.test(body ?? ''),
+        'the story does not attribute the significance flags to the publisher',
+      );
+      assert(
+        /What this does not establish/i.test(body ?? ''),
+        'the story has no section on what it cannot establish',
+      );
+      return `range and ${flags[1]} compared areas, computed`;
+    });
+
+    await check('a story figure exports genuine vector SVG', async () => {
+      const [download] = await Promise.all([
+        page.waitForEvent('download', { timeout: 30_000 }),
+        page.locator('figure button:has-text("SVG")').first().click(),
+      ]);
+      const path = join(downloadDir, 'story.svg');
+      await download.saveAs(path);
+      const svg = readFileSync(path, 'utf8');
+      const paths = svg.match(/<path\s[^>]*d="[^"]{40,}"/g) ?? [];
+      assert(paths.length > 50, `only ${paths.length} vector paths in the story figure`);
+      assert(!/<image/i.test(svg), 'story figure embeds a raster');
+      assert(/Open Government Licence/.test(svg), 'story figure lacks its licence note');
+      return `${paths.length} paths`;
+    });
+
+    await check('a story that loses its data says so instead of rendering', async () => {
+      // The life-expectancy story only applies while no combined series exists.
+      await page.goto(`${BASE}/?v=stories`, { waitUntil: 'networkidle' });
+      await page.locator('button:has-text("no single number")').first().click();
+      await page.waitForSelector('text=There is no combined figure', { timeout: 45_000 });
+      const body = await page.textContent('article');
+      assert(
+        /published separately for/i.test(body ?? ''),
+        'the story does not state how the measure is published',
+      );
+      assert(
+        /recorded sex categories/i.test(body ?? ''),
+        'recorded sex is not distinguished from gender identity',
+      );
+      return 'guarded and explained';
+    });
+
     // ----------------------------------------------------------- downloads
     await check('SVG download works and contains real vector content', async () => {
       await page.goto(`${BASE}/?v=explore&a=E06000065&n=England`, { waitUntil: 'networkidle' });
