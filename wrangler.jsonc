@@ -1,0 +1,22 @@
+{
+  // Cloudflare Workers Static Assets.
+  //
+  // The atlas is a static site: there is no Worker script, no backend, no
+  // database and no runtime secret. This config uploads `dist/` to Cloudflare's
+  // asset store and serves it directly from the edge — no `main` entry point is
+  // declared, so no server-side code runs at all.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "respira-atlas",
+  "compatibility_date": "2026-10-18",
+  "assets": {
+    "directory": "./dist",
+    // All analytical state lives in the query string, so there is one HTML
+    // entry point. "single-page-application" serves index.html for any path
+    // that is not a real asset, with a 200 rather than a redirect, so a shared
+    // deep link keeps its URL and restores the exact view.
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

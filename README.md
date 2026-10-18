@@ -149,10 +149,12 @@ See [docs/TESTING.md](docs/TESTING.md) for the output.
 
 ## Deploying
 
-Static site, Cloudflare Pages. Build command `npm run build`, output directory
-`dist`. SPA fallback and headers ship in `public/_redirects` and
-`public/_headers`. No backend, no Workers, no Pages Functions, no runtime
-secrets. Full instructions in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+Static site on Cloudflare. Build command `npm run build`, assets served from
+`dist` via Workers Static Assets (`wrangler.jsonc`), with SPA routing handled by
+`not_found_handling: "single-page-application"` so shared deep links keep their
+URL. There is no Worker script, no backend and no runtime secret — nothing runs
+server-side. The legacy Pages workflow also works unchanged. Full instructions
+in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 
