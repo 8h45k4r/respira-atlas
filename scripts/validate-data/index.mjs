@@ -84,7 +84,13 @@ check(indicatorIndex.indicators.length === manifest.indicators.length,
 for (const indicator of indicatorIndex.indicators) {
   const label = `indicator ${indicator.id}`;
   check(!!indicator.name, `${label}: missing name`);
-  check(!!indicator.unit, `${label}: missing unit`);
+  // A unit may legitimately be absent — an index or score such as the IMD
+  // deprivation score is unitless — but the value type must always say what
+  // kind of quantity it is, or the number cannot be read at all.
+  check(
+    !!indicator.unit || !!indicator.valueType,
+    `${label}: has neither a unit nor a value type`,
+  );
   check(!!indicator.valueType, `${label}: missing value type`);
   check(!!indicator.yearType, `${label}: missing year type`);
   check(!!indicator.definition, `${label}: missing definition`);

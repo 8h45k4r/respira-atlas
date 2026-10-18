@@ -130,6 +130,10 @@ export const observationFileSchema = z.object({
   defaultPeriodSeries: z.string(),
   sex: z.string(),
   age: z.string(),
+  defaultSex: z.string().nullable(),
+  requiresSexChoice: z.boolean(),
+  primarySexes: z.array(z.string()),
+  primaryAges: z.array(z.string()),
   benchmark: z.object({
     areaCode: z.string(),
     areaName: z.string(),

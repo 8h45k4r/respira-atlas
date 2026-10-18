@@ -35,6 +35,15 @@ export const geographyAvailabilitySchema = z.object({
   latestPeriod: z.string().nullable(),
   aggregateSex: z.string(),
   aggregateAge: z.string(),
+  /**
+   * The combined series, when the publisher supplies one. Null for measures
+   * published only by sex — life expectancy, for instance — where no combined
+   * figure exists and the reader must choose.
+   */
+  defaultSex: z.string().nullable(),
+  requiresSexChoice: z.boolean(),
+  primarySexes: z.array(z.string()),
+  primaryAges: z.array(z.string()),
   sexes: z.array(z.string()),
   ages: z.array(z.string()),
   categoryTypes: z.array(z.string()),
@@ -56,6 +65,8 @@ export const indicatorSchema = z.object({
   id: z.number(),
   name: z.string(),
   shortName: z.string(),
+  topic: z.string(),
+  topicLabel: z.string(),
   domain: z.string(),
   domainLabel: z.string(),
   definition: z.string().nullable(),
@@ -128,11 +139,22 @@ export const manifestSchema = z.object({
   }),
   indicators: z.array(
     z.object({
-      id: z.number(), name: z.string(), shortName: z.string(), domain: z.string(),
+      id: z.number(), name: z.string(), shortName: z.string(),
+      topic: z.string(), topicLabel: z.string(), domain: z.string(),
       domainLabel: z.string(), unit: z.string().nullable(),
       valueType: z.string().nullable(), yearType: z.string().nullable(),
       direction: z.string(), geographies: z.array(z.string()),
       latestPeriodByGeography: z.record(z.string(), z.string().nullable()),
+    }),
+  ),
+  topics: z.record(
+    z.string(),
+    z.object({
+      key: z.string(),
+      label: z.string(),
+      short: z.string(),
+      question: z.string(),
+      indicatorCount: z.number(),
     }),
   ),
   domains: z.record(z.string(), z.string()),
@@ -160,6 +182,7 @@ export const coverageSchema = z.object({
     z.object({
       indicatorId: z.number(),
       indicatorName: z.string(),
+      topic: z.string(),
       nation: z.string(),
       areaTypeKey: z.string(),
       areaTypeLabel: z.string(),

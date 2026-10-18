@@ -14,6 +14,8 @@ export function makeIndicator(overrides: Partial<Indicator> = {}): Indicator {
     id: 93577,
     name: 'Emergency hospital admissions for COPD, all ages',
     shortName: 'Emergency admissions for COPD',
+    topic: 'respiratory',
+    topicLabel: 'Respiratory health',
     domain: 'copd',
     domainLabel: 'COPD',
     definition: 'Emergency admissions for COPD.',

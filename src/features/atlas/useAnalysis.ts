@@ -107,6 +107,9 @@ export interface Analysis {
   readonly evidence: EvidenceStatement | null;
   readonly notes: MandatoryNotes;
   readonly period: string;
+  readonly sex: string;
+  readonly availableSexes: readonly string[];
+  readonly requiresSexChoice: boolean;
   readonly periodSeries: ObservationSet['periodSeries'][number];
   readonly availablePeriods: readonly string[];
   readonly question: string;
@@ -161,8 +164,36 @@ export function useAnalysis({
       period = fallback;
     }
 
+    /*
+     * Resolve the population series.
+     *
+     * Most measures publish a combined series and `defaultSex` names it. Some —
+     * life expectancy being the standard case — are published only by sex, and
+     * there is no combined figure to fall back on. Rather than silently picking
+     * one, the resolved choice is reported back so the interface can say which
+     * population is on screen and why.
+     */
+    const availableSexes = observations.primarySexes;
+    let sex = state.sex ?? observations.defaultSex ?? availableSexes[0] ?? '';
+    if (!availableSexes.includes(sex)) {
+      const fallback = observations.defaultSex ?? availableSexes[0] ?? '';
+      if (state.sex) {
+        corrections.push(
+          `“${state.sex}” is not published for this measure at this geography; ` +
+            `showing ${fallback}.`,
+        );
+      }
+      sex = fallback;
+    }
+    if (observations.requiresSexChoice && !state.sex) {
+      corrections.push(
+        `${indicator.shortName} is published separately for ${availableSexes.join(' and ')} ` +
+          `with no combined figure. Showing ${sex}; change the population to see the other.`,
+      );
+    }
+
     const observationsForPeriod = observations.observations.filter(
-      (observation) => observation.period === period,
+      (observation) => observation.period === period && observation.sex === sex,
     );
     const byArea = new Map(
       observationsForPeriod.map((observation) => [observation.areaCode, observation]),
@@ -172,7 +203,9 @@ export function useAnalysis({
     // this period, so moving through time cannot silently recolour the map.
     const classification = state.lockScale
       ? classify(
-          observations.observations.filter((o) => series.periods.includes(o.period)),
+          observations.observations.filter(
+            (o) => series.periods.includes(o.period) && o.sex === sex,
+          ),
           { method: state.classification, classCount: state.classCount },
         )
       : classify(observationsForPeriod, {
@@ -208,7 +241,9 @@ export function useAnalysis({
     const selectedObservation = state.selectedAreaCode
       ? byArea.get(state.selectedAreaCode)
       : undefined;
-    const benchmarkObservation = observations.benchmarkByPeriod.get(period);
+    const benchmarkObservation = observations.benchmark.observations.find(
+      (o) => o.period === period && o.sex === sex,
+    );
 
     const selectedArea = state.selectedAreaCode
       ? registry.get(state.selectedAreaCode)
@@ -219,7 +254,12 @@ export function useAnalysis({
     const previousPeriod = seriesIndex > 0 ? series.periods[seriesIndex - 1] : undefined;
     const previousObservation =
       previousPeriod && state.selectedAreaCode
-        ? observations.byArea.get(state.selectedAreaCode)?.get(previousPeriod)
+        ? observations.observations.find(
+            (o) =>
+              o.areaCode === state.selectedAreaCode &&
+              o.period === previousPeriod &&
+              o.sex === sex,
+          )
         : undefined;
 
     const evidence: EvidenceStatement | null = selectedArea
@@ -239,7 +279,7 @@ export function useAnalysis({
             benchmarkLabel: catalogue.manifest.coverage.benchmark.label,
             previousObservation,
             previousPeriod,
-            sex: observations.sex,
+            sex,
             age: observations.age,
           } satisfies EvidenceContext,
           areaType.boundaryVintage,
@@ -251,7 +291,7 @@ export function useAnalysis({
       indicatorId: indicator.id,
       geography: areaType.label,
       boundaryVintage: areaType.boundaryVintage,
-      population: `${observations.sex}, ${observations.age}`,
+      population: `${sex}, ${observations.age}`,
       period: series.pooled ? `${period} (${series.label.toLowerCase()})` : period,
       benchmark: catalogue.manifest.coverage.benchmark.label,
       unit: indicator.unit ?? 'not stated',
@@ -280,6 +320,9 @@ export function useAnalysis({
       evidence,
       notes,
       period,
+      sex,
+      availableSexes,
+      requiresSexChoice: observations.requiresSexChoice,
       periodSeries: series,
       availablePeriods: series.periods,
       question,

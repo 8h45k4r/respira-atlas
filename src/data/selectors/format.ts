@@ -56,9 +56,17 @@ export function formatInterval(
   return `${formatValue(lower, indicator)} to ${formatValue(upper, indicator)}`;
 }
 
-/** Unit as it should appear on an axis or legend title. */
+/**
+ * Unit as it should appear on an axis or legend title.
+ *
+ * Some measures are genuinely unitless — an index or score, for instance — and
+ * fall back to the value type so the axis still says what kind of quantity it
+ * is rather than going blank.
+ */
 export function unitLabel(indicator: Pick<Indicator, 'unit' | 'valueType'>): string {
-  if (!indicator.unit) return '';
+  if (!indicator.unit) {
+    return indicator.valueType ? indicator.valueType.toLowerCase() : 'value';
+  }
   if (indicator.unit === '%') return 'per cent';
   return indicator.unit;
 }

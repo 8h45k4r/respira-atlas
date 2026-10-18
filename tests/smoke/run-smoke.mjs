@@ -169,7 +169,11 @@ async function main() {
       const url = page.url();
       assert(/a=E08000019/.test(url), `URL did not record the selection: ${url}`);
       const panel = await page.textContent('aside');
-      assert(/per 100,000/.test(panel ?? ''), 'detail panel has no value');
+      // Unit-agnostic: the catalogue now spans rates, percentages, years and
+      // unitless scores, so assert a figure and its period rather than a unit.
+      assert(/\d/.test(panel ?? ''), 'detail panel shows no figure');
+      assert(/What was observed/i.test(panel ?? ''), 'detail panel has no evidence statement');
+      assert(/Sheffield/i.test(panel ?? ''), 'detail panel is not about the selected area');
       return 'E08000019';
     });
 

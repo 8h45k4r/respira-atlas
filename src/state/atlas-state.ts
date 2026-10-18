@@ -10,9 +10,17 @@ export type AtlasMode = 'explore' | 'explain' | 'briefing' | 'methods' | 'covera
  */
 export interface AtlasState {
   readonly mode: AtlasMode;
+  /** Topic grouping for indicator selection. */
+  readonly topic: string | null;
   readonly geographyMode: GeographyMode;
   readonly areaTypeKey: string | null;
   readonly indicatorId: number | null;
+  /**
+   * Recorded sex category as the publisher labels it. Null means "use the
+   * published combined series", which does not exist for every measure — see
+   * `requiresSexChoice` in the capability metadata.
+   */
+  readonly sex: string | null;
   readonly period: string | null;
   /** Period series range key ('1y', '3y'); pooled and single-year never mix. */
   readonly periodSeries: string | null;
@@ -33,9 +41,11 @@ export interface AtlasState {
 
 export const DEFAULT_STATE: AtlasState = {
   mode: 'explore',
+  topic: null,
   geographyMode: 'administrative',
   areaTypeKey: null,
   indicatorId: null,
+  sex: null,
   period: null,
   periodSeries: null,
   selectedAreaCode: null,
@@ -53,9 +63,11 @@ export const MAX_COMPARISON_AREAS = 4;
 
 const KEYS = {
   mode: 'v',
+  topic: 't',
   geographyMode: 'g',
   areaTypeKey: 'l',
   indicatorId: 'i',
+  sex: 'sx',
   period: 'p',
   periodSeries: 'ps',
   selectedAreaCode: 'a',
@@ -82,11 +94,13 @@ export function serialiseState(state: AtlasState): string {
   };
 
   if (state.mode !== DEFAULT_STATE.mode) put(KEYS.mode, state.mode);
+  put(KEYS.topic, state.topic);
   if (state.geographyMode !== DEFAULT_STATE.geographyMode) {
     put(KEYS.geographyMode, state.geographyMode);
   }
   put(KEYS.areaTypeKey, state.areaTypeKey);
   put(KEYS.indicatorId, state.indicatorId?.toString());
+  put(KEYS.sex, state.sex);
   put(KEYS.period, state.period);
   put(KEYS.periodSeries, state.periodSeries);
   put(KEYS.selectedAreaCode, state.selectedAreaCode);
@@ -148,9 +162,11 @@ export function deserialiseState(query: string): AtlasState {
 
   return {
     mode: oneOf(KEYS.mode, MODES, DEFAULT_STATE.mode),
+    topic: str(KEYS.topic),
     geographyMode: oneOf(KEYS.geographyMode, GEOGRAPHY_MODES, DEFAULT_STATE.geographyMode),
     areaTypeKey: str(KEYS.areaTypeKey),
     indicatorId: int(KEYS.indicatorId),
+    sex: str(KEYS.sex),
     period: str(KEYS.period),
     periodSeries: str(KEYS.periodSeries),
     selectedAreaCode: selected && /^[ENSWK]\d{8}$/.test(selected) ? selected : null,

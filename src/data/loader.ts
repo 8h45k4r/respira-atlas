@@ -11,7 +11,7 @@ import { z } from 'zod';
 const BASE = `${import.meta.env.BASE_URL ?? '/'}data`.replace(/\/{2,}/g, '/');
 
 /** Bumped when the client's expectations change; invalidates any stale cache. */
-export const CLIENT_CACHE_VERSION = 'v1';
+export const CLIENT_CACHE_VERSION = 'v2';
 
 export class DataLoadError extends Error {
   constructor(
@@ -167,6 +167,10 @@ export interface ObservationSet {
   readonly defaultPeriodSeries: string;
   readonly sex: string;
   readonly age: string;
+  readonly defaultSex: string | null;
+  readonly requiresSexChoice: boolean;
+  readonly primarySexes: readonly string[];
+  readonly primaryAges: readonly string[];
   readonly observations: readonly Observation[];
   readonly benchmark: {
     readonly areaCode: string;
@@ -218,6 +222,10 @@ export async function loadObservations(
     defaultPeriodSeries: raw.defaultPeriodSeries,
     sex: raw.sex,
     age: raw.age,
+    defaultSex: raw.defaultSex,
+    requiresSexChoice: raw.requiresSexChoice,
+    primarySexes: raw.primarySexes,
+    primaryAges: raw.primaryAges,
     observations,
     benchmark: {
       areaCode: raw.benchmark.areaCode,

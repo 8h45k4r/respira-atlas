@@ -119,34 +119,171 @@ export const FINGERTIPS_LICENCE = {
  * Availability per area type is NOT declared here. It is discovered at prepare time
  * from GET /api/available_data?indicator_id=<iid> and written into the coverage matrix.
  */
+/**
+ * Topics group indicators for navigation. A topic is a curatorial choice; the
+ * `domain` beneath it mirrors how the publisher groups the measure.
+ *
+ * Order here is the order shown in the interface: population health first
+ * because it frames everything else, wider determinants last because it is
+ * context rather than outcome.
+ */
+export const TOPICS = {
+  'population-health': {
+    key: 'population-health',
+    label: 'Population health and life expectancy',
+    short: 'Population health',
+    question: 'How long do people live here, and what are they dying of?',
+  },
+  respiratory: {
+    key: 'respiratory',
+    label: 'Respiratory health',
+    short: 'Respiratory',
+    question: 'How does the burden of lung disease vary?',
+  },
+  cardiovascular: {
+    key: 'cardiovascular',
+    label: 'Cardiovascular health',
+    short: 'Cardiovascular',
+    question: 'Where is heart and circulatory disease concentrated?',
+  },
+  cancer: {
+    key: 'cancer',
+    label: 'Cancer',
+    short: 'Cancer',
+    question: 'How does cancer mortality vary between places?',
+  },
+  'mental-health': {
+    key: 'mental-health',
+    label: 'Mental health',
+    short: 'Mental health',
+    question: 'What do the available mental health measures show?',
+  },
+  'child-maternal': {
+    key: 'child-maternal',
+    label: 'Child and maternal health',
+    short: 'Child health',
+    question: 'How do outcomes for children and infants differ by place?',
+  },
+  metabolic: {
+    key: 'metabolic',
+    label: 'Obesity and metabolic health',
+    short: 'Metabolic',
+    question: 'How does measured and recorded weight vary?',
+  },
+  'alcohol-drugs': {
+    key: 'alcohol-drugs',
+    label: 'Alcohol and drugs',
+    short: 'Alcohol and drugs',
+    question: 'Where is alcohol-related harm highest?',
+  },
+  'risk-factors': {
+    key: 'risk-factors',
+    label: 'Behavioural risk factors',
+    short: 'Risk factors',
+    question: 'How do smoking and physical inactivity vary?',
+  },
+  environment: {
+    key: 'environment',
+    label: 'Environment',
+    short: 'Environment',
+    question: 'How does environmental exposure differ between places?',
+  },
+  'wider-determinants': {
+    key: 'wider-determinants',
+    label: 'Wider determinants',
+    short: 'Determinants',
+    question: 'What is the social and economic context?',
+  },
+};
+
 export const INDICATORS = [
-  { iid: 93963, profileId: 29, domain: 'mortality',   direction: 'low-is-good' },
-  { iid: 40701, profileId: 29, domain: 'mortality',   direction: 'low-is-good' },
-  { iid: 93724, profileId: 29, domain: 'mortality',   direction: 'low-is-good' },
-  { iid: 1204,  profileId: 29, domain: 'copd',        direction: 'low-is-good' },
-  { iid: 253,   profileId: 29, domain: 'copd',        direction: 'not-interpretable' },
-  { iid: 93577, profileId: 29, domain: 'copd',        direction: 'low-is-good' },
-  { iid: 90933, profileId: 29, domain: 'asthma',      direction: 'not-interpretable' },
-  { iid: 93573, profileId: 29, domain: 'asthma',      direction: 'low-is-good' },
-  { iid: 90810, profileId: 29, domain: 'children',    direction: 'low-is-good' },
-  { iid: 93576, profileId: 29, domain: 'children',    direction: 'low-is-good' },
-  { iid: 93575, profileId: 29, domain: 'respiratory', direction: 'low-is-good' },
-  { iid: 93574, profileId: 29, domain: 'pneumonia',   direction: 'low-is-good' },
-  { iid: 92443, profileId: 29, domain: 'risk-factor', direction: 'low-is-good' },
-  { iid: 93867, profileId: 29, domain: 'environment', direction: 'low-is-good' },
-  { iid: 93759, profileId: 29, domain: 'environment', direction: 'low-is-good' },
+  // ---------------------------------------------------------------- population
+  { iid: 90366, profileId: 125, topic: 'population-health', domain: 'life-expectancy', direction: 'high-is-good' },
+  { iid: 93823, profileId: 125, topic: 'population-health', domain: 'mortality',       direction: 'low-is-good' },
+  { iid: 93721, profileId: 125, topic: 'population-health', domain: 'mortality',       direction: 'low-is-good' },
+
+  // --------------------------------------------------------------- respiratory
+  { iid: 93963, profileId: 29,  topic: 'respiratory', domain: 'mortality',   direction: 'low-is-good' },
+  { iid: 40701, profileId: 29,  topic: 'respiratory', domain: 'mortality',   direction: 'low-is-good' },
+  { iid: 93724, profileId: 29,  topic: 'respiratory', domain: 'mortality',   direction: 'low-is-good' },
+  { iid: 1204,  profileId: 29,  topic: 'respiratory', domain: 'copd',        direction: 'low-is-good' },
+  { iid: 253,   profileId: 29,  topic: 'respiratory', domain: 'copd',        direction: 'not-interpretable' },
+  { iid: 93577, profileId: 29,  topic: 'respiratory', domain: 'copd',        direction: 'low-is-good' },
+  { iid: 90933, profileId: 29,  topic: 'respiratory', domain: 'asthma',      direction: 'not-interpretable' },
+  { iid: 93573, profileId: 29,  topic: 'respiratory', domain: 'asthma',      direction: 'low-is-good' },
+  { iid: 90810, profileId: 29,  topic: 'respiratory', domain: 'children',    direction: 'low-is-good' },
+  { iid: 93576, profileId: 29,  topic: 'respiratory', domain: 'children',    direction: 'low-is-good' },
+  { iid: 93575, profileId: 29,  topic: 'respiratory', domain: 'respiratory', direction: 'low-is-good' },
+  { iid: 93574, profileId: 29,  topic: 'respiratory', domain: 'pneumonia',   direction: 'low-is-good' },
+
+  // ------------------------------------------------------------ cardiovascular
+  { iid: 40401, profileId: 125, topic: 'cardiovascular', domain: 'mortality',  direction: 'low-is-good' },
+  { iid: 93956, profileId: 125, topic: 'cardiovascular', domain: 'mortality',  direction: 'low-is-good' },
+  { iid: 90986, profileId: 135, topic: 'cardiovascular', domain: 'admissions', direction: 'low-is-good' },
+  { iid: 219,   profileId: 135, topic: 'cardiovascular', domain: 'prevalence', direction: 'not-interpretable' },
+
+  // -------------------------------------------------------------------- cancer
+  { iid: 40501, profileId: 125, topic: 'cancer', domain: 'mortality', direction: 'low-is-good' },
+  { iid: 93959, profileId: 125, topic: 'cancer', domain: 'mortality', direction: 'low-is-good' },
+
+  // --------------------------------------------------------------- mental health
+  { iid: 41001, profileId: 125, topic: 'mental-health', domain: 'mortality',  direction: 'low-is-good' },
+  { iid: 848,   profileId: 50,  topic: 'mental-health', domain: 'prevalence', direction: 'not-interpretable' },
+  { iid: 21001, profileId: 50,  topic: 'mental-health', domain: 'admissions', direction: 'low-is-good' },
+
+  // ------------------------------------------------------------ child and maternal
+  { iid: 92196, profileId: 125, topic: 'child-maternal', domain: 'mortality',  direction: 'low-is-good' },
+  { iid: 90801, profileId: 125, topic: 'child-maternal', domain: 'mortality',  direction: 'low-is-good' },
+  { iid: 92517, profileId: 105, topic: 'child-maternal', domain: 'infant',     direction: 'high-is-good' },
+  { iid: 90323, profileId: 105, topic: 'child-maternal', domain: 'childhood',  direction: 'low-is-good' },
+
+  // ----------------------------------------------------------------- metabolic
+  { iid: 93881, profileId: 135, topic: 'metabolic', domain: 'obesity', direction: 'low-is-good' },
+
+  // ------------------------------------------------------------- alcohol/drugs
+  { iid: 91380, profileId: 125, topic: 'alcohol-drugs', domain: 'mortality', direction: 'low-is-good' },
+
+  // -------------------------------------------------------------- risk factors
+  { iid: 92443, profileId: 29,  topic: 'risk-factors', domain: 'smoking',  direction: 'low-is-good' },
+  { iid: 93015, profileId: 135, topic: 'risk-factors', domain: 'activity', direction: 'low-is-good' },
+
+  // --------------------------------------------------------------- environment
+  { iid: 93867, profileId: 29,  topic: 'environment', domain: 'air-quality', direction: 'low-is-good' },
+
+  // -------------------------------------------------------- wider determinants
+  { iid: 94240, profileId: 135, topic: 'wider-determinants', domain: 'deprivation', direction: 'not-interpretable' },
+  { iid: 93700, profileId: 105, topic: 'wider-determinants', domain: 'income',      direction: 'low-is-good' },
+
+  /*
+   * Carried deliberately as a negative case. /api/available_data declares 93759
+   * (fuel poverty) at eight geographies; the observations endpoint returns no
+   * rows at any of them. Keeping it here exercises the verification path on
+   * every run and keeps the discrepancy visible in the coverage view rather
+   * than quietly forgotten.
+   */
+  { iid: 93759, profileId: 29,  topic: 'wider-determinants', domain: 'fuel-poverty', direction: 'low-is-good' },
 ];
 
 export const DOMAIN_LABELS = {
-  mortality: 'Respiratory mortality',
+  'life-expectancy': 'Life expectancy',
+  mortality: 'Mortality',
+  admissions: 'Hospital admissions',
+  prevalence: 'Recorded prevalence',
   copd: 'COPD',
   asthma: 'Asthma',
   pneumonia: 'Pneumonia',
   respiratory: 'All respiratory disease',
   children: 'Childhood respiratory outcomes',
-  'risk-factor': 'Risk factors',
-  environment: 'Environmental and contextual',
+  childhood: 'Childhood measurement',
+  infant: 'Infant and maternal',
+  obesity: 'Obesity',
+  smoking: 'Smoking',
+  activity: 'Physical activity',
+  'air-quality': 'Air quality',
+  deprivation: 'Deprivation',
+  income: 'Income',
+  'fuel-poverty': 'Fuel poverty',
 };
 
 /** Bumped whenever the shape of the emitted files changes. */
-export const DATA_SCHEMA_VERSION = 1;
+export const DATA_SCHEMA_VERSION = 2;

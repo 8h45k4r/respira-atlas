@@ -7,9 +7,11 @@ import {
 describe('URL state round trip', () => {
   const full: AtlasState = {
     mode: 'explain',
+    topic: 'cardiovascular',
     geographyMode: 'nhs',
     areaTypeKey: 'icb22',
     indicatorId: 93577,
+    sex: 'Female',
     period: '2024/25',
     periodSeries: '1y',
     selectedAreaCode: 'E54000008',

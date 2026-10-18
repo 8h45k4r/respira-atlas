@@ -24,10 +24,10 @@ export function AppHeader({
       <div className="mx-auto flex max-w-[110rem] flex-wrap items-end justify-between gap-x-6 gap-y-2 px-4 pb-0 pt-3">
         <div className="min-w-0">
           <h1 className="text-[1.0625rem] font-semibold leading-tight tracking-[-0.015em] text-oxford-900">
-            UK Respiratory Health Evidence Atlas
+            Public Health Evidence Atlas
           </h1>
           <p className="mt-0.5 text-xs text-slate-600">
-            Place-based evidence for respiratory health research and public decisions.
+            Understand health across people, places, and time.
           </p>
         </div>
         {manifest ? (
@@ -39,7 +39,7 @@ export function AppHeader({
               {manifest.coverage.nationsWithData.join(', ')} coverage
             </Badge>
             <Badge tone="muted">
-              {manifest.profile.name} profile
+              {Object.keys(manifest.topics).length} topics
             </Badge>
           </div>
         ) : null}

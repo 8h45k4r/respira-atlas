@@ -12,7 +12,7 @@ import { mkdir, writeFile, rm, readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  AREA_TYPES, NATIONS_LAYER, INDICATORS, DOMAIN_LABELS,
+  AREA_TYPES, NATIONS_LAYER, INDICATORS, DOMAIN_LABELS, TOPICS,
   RESPIRATORY_PROFILE_ID, ENGLAND_AREA_CODE, ENGLAND_AREA_TYPE_ID,
   BOUNDARY_LICENCE, FINGERTIPS_LICENCE, DATA_SCHEMA_VERSION, FINGERTIPS_BASE,
 } from './config.mjs';
@@ -254,8 +254,10 @@ async function main() {
       id: spec.iid,
       name: d.Name,
       shortName: d.SimpleName || d.Name,
+      topic: spec.topic,
+      topicLabel: TOPICS[spec.topic].label,
       domain: spec.domain,
-      domainLabel: DOMAIN_LABELS[spec.domain],
+      domainLabel: DOMAIN_LABELS[spec.domain] ?? spec.domain,
       definition: stripHtml(d.Definition) ?? stripHtml(d.SimpleDefinition),
       simpleDefinition: stripHtml(d.SimpleDefinition),
       rationale: stripHtml(d.Rationale),
@@ -378,22 +380,42 @@ async function main() {
         });
       }
 
-      // The aggregate series (whole population, no subgroup breakdown) is what the
-      // map, trend and benchmark comparison use, so it ships in the primary file.
-      // Sex and category breakdowns go in a separate file that is fetched only when
-      // the inequality view asks for them.
-      const isAggregate = (o) =>
-        o.categoryType === null && (o.sex === 'Persons' || sexes.length === 1);
-      const aggregateRows = areaRows.filter(isAggregate);
-      const subgroupRows = areaRows.filter((o) => !isAggregate(o));
+      /*
+       * The primary file holds the population series the map needs by default;
+       * everything else is fetched on demand.
+       *
+       * Most indicators publish a combined "Persons" series, so that is the
+       * default and the sex breakdown is a subgroup. But some are published
+       * only by sex and have no combined figure at all — life expectancy is the
+       * standard example, and reporting it combined would be wrong rather than
+       * merely unconventional. For those, every sex goes in the primary file,
+       * because the reader has to choose one before any figure means anything
+       * and the interface must be able to offer that choice immediately.
+       */
+      const hasPersons = sexes.includes('Persons');
+      const requiresSexChoice = !hasPersons && sexes.length > 1;
+      const defaultSex = hasPersons ? 'Persons' : null;
+
+      const isPrimary = (o) => {
+        if (o.categoryType !== null) return false;
+        if (hasPersons) return o.sex === 'Persons';
+        // No combined figure published: keep every sex in the primary file.
+        return true;
+      };
+      const aggregateRows = areaRows.filter(isPrimary);
+      const subgroupRows = areaRows.filter((o) => !isPrimary(o));
 
       if (aggregateRows.length === 0) {
         throw new PrepareError(
-          `No aggregate series for indicator ${spec.iid} @ ${areaType.key}. ` +
-            `Sexes present: ${sexes.join(', ')}; category types: ${categoryTypes.join(', ') || 'none'}.`,
+          `No primary series for indicator ${spec.iid} @ ${areaType.key}. ` +
+            `Sexes present: ${sexes.join(', ') || 'none'}; ` +
+            `category types: ${categoryTypes.join(', ') || 'none'}.`,
           { url },
         );
       }
+
+      const primarySexes = [...new Set(aggregateRows.map((o) => o.sex))].filter(Boolean).sort();
+      const primaryAges = [...new Set(aggregateRows.map((o) => o.age))].filter(Boolean).sort();
 
       const aggregatePeriods = [...new Set(aggregateRows.map((o) => o.period))];
       aggregatePeriods.sort((a, b) =>
@@ -459,14 +481,18 @@ async function main() {
         periodRangeByPeriod: Object.fromEntries(rangeByPeriod),
         periodSeries,
         defaultPeriodSeries,
-        sex: aggregateRows[0].sex,
-        age: aggregateRows[0].age,
+        sex: defaultSex ?? primarySexes[0],
+        age: primaryAges[0],
+        defaultSex,
+        requiresSexChoice,
+        primarySexes,
+        primaryAges,
         benchmark: {
           areaCode: ENGLAND_AREA_CODE,
           areaName: 'England',
           areaTypeId: ENGLAND_AREA_TYPE_ID,
           label: 'England',
-          data: encodeObservations(benchmarkRows.filter(isAggregate)),
+          data: encodeObservations(benchmarkRows.filter(isPrimary)),
         },
         data: encodeObservations(aggregateRows),
       });
@@ -484,7 +510,7 @@ async function main() {
           retrievedAt: RETRIEVED_AT,
           data: encodeObservations(subgroupRows),
           benchmark: { areaCode: ENGLAND_AREA_CODE, label: 'England',
-            data: encodeObservations(benchmarkRows.filter((o) => !isAggregate(o))) },
+            data: encodeObservations(benchmarkRows.filter((o) => !isPrimary(o))) },
         });
         observationFiles.push({ ...subgroupFile, indicatorId: spec.iid,
           areaTypeKey: areaType.key, kind: 'subgroups' });
@@ -509,8 +535,12 @@ async function main() {
         latestPeriod:
           (periodSeries.find((x) => x.range === defaultPeriodSeries) ?? periodSeries[0])
             .latestPeriod,
-        aggregateSex: aggregateRows[0].sex,
-        aggregateAge: aggregateRows[0].age,
+        aggregateSex: defaultSex ?? primarySexes[0],
+        aggregateAge: primaryAges[0],
+        defaultSex,
+        requiresSexChoice,
+        primarySexes,
+        primaryAges,
         sexes,
         ages,
         categoryTypes,
@@ -530,7 +560,8 @@ async function main() {
       };
 
       log(
-        `  ${spec.iid} @ ${areaType.key}: ${aggregateRows.length} aggregate obs ` +
+        `  ${spec.iid} @ ${areaType.key}: ${aggregateRows.length} primary obs ` +
+          `[${primarySexes.join('/')}]${requiresSexChoice ? ' (no combined figure)' : ''} ` +
           `(+${subgroupRows.length} subgroup), ${aggregatePeriods.length} periods, ` +
           `CI:${indicatorRecord.geographies[areaType.key].hasConfidenceIntervals} ` +
           `sig:${indicatorRecord.geographies[areaType.key].hasSignificanceFlags}`,
@@ -567,6 +598,7 @@ async function main() {
         coverageMatrix.push({
           indicatorId: spec.iid,
           indicatorName: d.Name,
+          topic: spec.topic,
           nation,
           areaTypeKey: areaType.key,
           areaTypeLabel: areaType.label,
@@ -735,7 +767,9 @@ async function main() {
     nationsLayer: { key: NATIONS_LAYER.key, file: 'geography/nations.json',
       boundaryVintage: NATIONS_LAYER.boundaryVintage },
     indicators: indicators.map((i) => ({
-      id: i.id, name: i.name, shortName: i.shortName, domain: i.domain,
+      id: i.id, name: i.name, shortName: i.shortName,
+      topic: i.topic, topicLabel: i.topicLabel,
+      domain: i.domain,
       domainLabel: i.domainLabel, unit: i.unit, valueType: i.valueType,
       yearType: i.yearType, direction: i.direction,
       geographies: Object.keys(i.geographies),
@@ -743,6 +777,18 @@ async function main() {
         Object.entries(i.geographies).map(([k, g]) => [k, g.latestPeriod]),
       ),
     })),
+    topics: Object.fromEntries(
+      Object.values(TOPICS).map((topic) => [
+        topic.key,
+        {
+          ...topic,
+          // Only topics that actually ended up with a published indicator are
+          // offered; a topic whose candidates all failed verification would
+          // otherwise appear in the interface as an empty promise.
+          indicatorCount: indicators.filter((i) => i.topic === topic.key).length,
+        },
+      ]).filter(([, topic]) => topic.indicatorCount > 0),
+    ),
     domains: DOMAIN_LABELS,
     excludedIndicators: unusable.map((d) => ({
       id: d.iid,

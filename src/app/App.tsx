@@ -80,7 +80,7 @@ function AppFooter({
       <div className="mx-auto flex max-w-[110rem] flex-wrap items-start gap-x-6 gap-y-2 font-figure text-2xs leading-relaxed text-slate-600">
         <p className="max-w-3xl">
           <span className="font-semibold text-slate-700">
-            UK Respiratory Health Evidence Atlas.
+            Public Health Evidence Atlas.
           </span>{' '}
           An independent research tool, built and maintained by a named team. The
           institutions its contributors work for or have worked for have not reviewed,

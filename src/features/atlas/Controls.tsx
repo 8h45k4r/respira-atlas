@@ -34,12 +34,19 @@ export function Controls({
   );
 
   type IndicatorRecord = (typeof indicators)[number];
-  const byDomain = new Map<string, IndicatorRecord[]>();
+
+  // Topic order follows the manifest, which is curated; alphabetical ordering
+  // would put "Alcohol and drugs" above "Population health", which is not how
+  // anyone approaches this.
+  const topicKeys = Object.keys(manifest.topics);
+  const byTopic = new Map<string, IndicatorRecord[]>();
   for (const indicator of indicators) {
-    const list = byDomain.get(indicator.domain) ?? [];
+    const list = byTopic.get(indicator.topic) ?? [];
     list.push(indicator);
-    byDomain.set(indicator.domain, list);
+    byTopic.set(indicator.topic, list);
   }
+
+  const activeTopic = state.topic ?? selection.indicator.topic;
 
   const series = observations?.periodSeries ?? [];
   const activeSeries =
@@ -111,22 +118,68 @@ export function Controls({
       </div>
 
       <div>
+        <Label htmlFor="topic">Topic</Label>
+        <Select
+          value={activeTopic}
+          onValueChange={(value) => {
+            // Move to an indicator that exists in the new topic at this level,
+            // rather than leaving a selection that cannot be shown.
+            const candidates = (byTopic.get(value) ?? []).filter(
+              (indicator) => Boolean(indicator.geographies[selection.areaType.key]),
+            );
+            const next = candidates[0] ?? (byTopic.get(value) ?? [])[0];
+            onChange({
+              topic: value,
+              indicatorId: next ? next.id : null,
+              period: null,
+              sex: null,
+            });
+          }}
+        >
+          <SelectTrigger id="topic" className="mt-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="max-w-[24rem]">
+            {topicKeys.map((key) => {
+              const topic = manifest.topics[key];
+              return (
+                <SelectItem
+                  key={key}
+                  value={key}
+                  hint={`${topic.indicatorCount} indicator${topic.indicatorCount === 1 ? '' : 's'}`}
+                >
+                  {topic.label}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+        <p className="mt-1 text-2xs leading-relaxed text-slate-500">
+          {manifest.topics[activeTopic]?.question}
+        </p>
+      </div>
+
+      <div>
         <Label htmlFor="indicator">Indicator</Label>
         <Select
           value={String(selection.indicator.id)}
-          onValueChange={(value) => onChange({ indicatorId: Number(value), period: null })}
+          onValueChange={(value) =>
+            onChange({ indicatorId: Number(value), period: null, sex: null })
+          }
         >
           <SelectTrigger id="indicator" className="mt-1">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="max-w-[26rem]">
-            {[...byDomain.entries()].map(([domain, list]) => (
-              <SelectGroup key={domain}>
-                <SelectLabel>{manifest.domains[domain] ?? domain}</SelectLabel>
+            {[...byTopic.entries()].map(([topicKey, list]) => (
+              <SelectGroup key={topicKey}>
+                <SelectLabel>{manifest.topics[topicKey]?.label ?? topicKey}</SelectLabel>
                 {list.map((indicator) => {
-                  const availableHere = Boolean(indicator.geographies[selection.areaType.key]);
-                  const elsewhere = Object.values(indicator.geographies)
-                    .map((geography) => geography.label)
+                  const availableHere = Boolean(
+                    indicator.geographies[selection.areaType.key],
+                  );
+                  const elsewhere = Object.keys(indicator.geographies)
+                    .map((key) => manifest.areaTypes[key]?.shortLabel ?? key)
                     .join(', ');
                   return (
                     <SelectItem
@@ -148,6 +201,37 @@ export function Controls({
           </SelectContent>
         </Select>
       </div>
+
+      {observations && observations.primarySexes.length > 1 ? (
+        <div>
+          <Label htmlFor="population">Population</Label>
+          <Select
+            value={state.sex ?? observations.defaultSex ?? observations.primarySexes[0]}
+            onValueChange={(value) => onChange({ sex: value })}
+          >
+            <SelectTrigger id="population" className="mt-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {observations.primarySexes.map((sex) => (
+                <SelectItem key={sex} value={sex}>
+                  {sex}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {observations.requiresSexChoice ? (
+            <p className="mt-1 text-2xs leading-relaxed text-brass-700">
+              No combined figure is published for this measure. The categories are the
+              publisher’s recorded sex categories, not gender identity.
+            </p>
+          ) : (
+            <p className="mt-1 text-2xs leading-relaxed text-slate-500">
+              Recorded sex as the publisher categorises it, not gender identity.
+            </p>
+          )}
+        </div>
+      ) : null}
 
       {series.length > 1 ? (
         <div>
