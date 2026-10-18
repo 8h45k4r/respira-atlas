@@ -16,9 +16,10 @@ It answers a narrow set of questions honestly rather than a wide set vaguely:
 - What can be responsibly communicated from this?
 - What is missing before anyone recommends an intervention?
 
-> This is a working research tool. It is **not** affiliated with, and carries no
-> endorsement from, the NHS, the Office for Health Improvement and Disparities,
-> any university, or any individual researcher.
+> An independent research tool, built and maintained by a named team (see
+> **Methods → Team**). Their institutional affiliations identify them; they do
+> **not** mean any institution has reviewed, endorsed or funded this atlas. It
+> carries no endorsement from the NHS, OHID or the ONS.
 
 ---
 

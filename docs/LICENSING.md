@@ -60,17 +60,25 @@ React (MIT) · Vite (MIT) · Tailwind CSS (MIT) · Radix UI (MIT) · d3-geo
 
 Fonts: Outfit and IBM Plex (SIL Open Font License 1.1), served from Google Fonts.
 
-## No institutional affiliation
+## Independence and endorsement
 
-This is a working research tool. It is **not** affiliated with, and carries no
-endorsement from:
+This is an independent working research tool, built and maintained by the team
+named in the application under **Methods → Team**.
+
+Team members' institutional affiliations are listed to identify them and their
+background. They do **not** mean that any institution has reviewed, endorsed,
+funded or approved this atlas, or any analysis produced with it.
+
+The atlas carries no endorsement from:
 
 - the NHS or any NHS organisation,
 - the Office for Health Improvement and Disparities,
 - the Office for National Statistics,
-- any university,
-- any individual researcher.
+- any university or employer of a team member.
 
 No institutional logo or branding is used anywhere. The product name is a
 working title, not a claim of provenance. The statement appears in the
-application footer and on every exported evidence brief.
+application footer, on the Team page, and on every exported evidence brief.
+
+Photographs of team members are reproduced with their permission and are served
+from this origin; they are not covered by the MIT licence on the source code.

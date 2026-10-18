@@ -82,9 +82,10 @@ function AppFooter({
           <span className="font-semibold text-slate-700">
             UK Respiratory Health Evidence Atlas.
           </span>{' '}
-          A working research tool. It is not affiliated with, and carries no endorsement
-          from, the NHS, the Office for Health Improvement and Disparities, any
-          university, or any individual researcher.
+          An independent research tool, built and maintained by a named team. The
+          institutions its contributors work for or have worked for have not reviewed,
+          endorsed or funded it, and it carries no endorsement from the NHS, the Office
+          for Health Improvement and Disparities or the Office for National Statistics.
         </p>
         {manifest ? (
           <p className="max-w-2xl">

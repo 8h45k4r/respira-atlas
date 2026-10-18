@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Catalogue } from '@/hooks/useAtlasCatalogue';
 import { Tabs, TabsList, TabsTrigger, TabsContent, Badge } from '@/components/ui/misc';
 import { formatDate } from '@/lib/utils';
+import { TeamSection } from '@/features/about/TeamSection';
 
 /**
  * Methods, definitions and limits.
@@ -30,6 +31,7 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
           <TabsTrigger value="geography">Geography</TabsTrigger>
           <TabsTrigger value="statistics">Statistics and cartography</TabsTrigger>
           <TabsTrigger value="provenance">Sources and licensing</TabsTrigger>
+          <TabsTrigger value="team">Team</TabsTrigger>
         </TabsList>
 
         <TabsContent value="interpretation" className="space-y-5">
@@ -410,13 +412,20 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
               inserted. Exported figures are produced by this application’s own SVG
               renderer and are not subject to that requirement.
             </p>
-            <h3>No institutional affiliation</h3>
+            <h3>Independence and endorsement</h3>
             <p>
-              This is a working research tool. It is not affiliated with, and carries no
-              endorsement from, the NHS, the Office for Health Improvement and
-              Disparities, any university, or any individual researcher. Published figures
+              This is an independent working research tool, built and maintained by the
+              team named under <strong>Team</strong>. Their institutional affiliations
+              identify them and their background; they do not mean that any institution
+              has reviewed, endorsed, funded or approved this atlas or the analyses
+              produced with it.
+            </p>
+            <p>
+              It carries no endorsement from the NHS, the Office for Health Improvement
+              and Disparities, or the Office for National Statistics. Published figures
               and their definitions belong to their publishers; the interpretation
-              framework here is the application’s own.
+              framework here is the application’s own, and any error in it is the
+              application’s, not the publisher’s.
             </p>
             <h3>Local storage</h3>
             <p>
@@ -433,6 +442,9 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
               bundled dataset from the sources above.
             </p>
           </Prose>
+        </TabsContent>
+        <TabsContent value="team">
+          <TeamSection />
         </TabsContent>
       </Tabs>
     </div>

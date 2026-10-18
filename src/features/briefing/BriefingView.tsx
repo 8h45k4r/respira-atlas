@@ -491,8 +491,9 @@ function PrintBrief({
         <ul className="space-y-0.5 font-figure text-[9px] leading-snug text-slate-600">
           {mandatoryNoteLines(analysis.notes).map((note) => <li key={note}>{note}</li>)}
           <li>
-            This brief is not affiliated with, and carries no endorsement from, the NHS,
-            OHID, or any university.
+            Produced with the Public Health Evidence Atlas, an independent research
+            tool. It carries no endorsement from the NHS, OHID, the ONS, or the
+            institutions its contributors are affiliated with.
           </li>
         </ul>
       </footer>
