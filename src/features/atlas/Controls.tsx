@@ -70,9 +70,9 @@ export function Controls({
                 })
               }
               className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700 ${
                   state.geographyMode === mode
-                    ? 'bg-navy-800 text-white'
+                    ? 'bg-oxford-800 text-white'
                     : 'text-slate-600 hover:bg-slate-100'
                 }`}
             >
@@ -229,7 +229,7 @@ export function Controls({
             step={1}
             value={state.classCount}
             onChange={(event) => onChange({ classCount: Number(event.target.value) })}
-            className="h-1.5 flex-1 accent-teal-700"
+            className="h-1.5 flex-1 accent-brass-700"
             aria-valuetext={`${state.classCount} classes`}
           />
           <span className="w-4 text-right text-xs tabular-nums text-slate-700">
@@ -238,7 +238,7 @@ export function Controls({
         </div>
 
         <Button
-          variant={state.lockScale ? 'teal' : 'outline'}
+          variant={state.lockScale ? 'brass' : 'outline'}
           size="sm"
           className="mt-2 w-full"
           onClick={() => onChange({ lockScale: !state.lockScale })}
@@ -259,7 +259,7 @@ export function Controls({
       </div>
 
       <div className="rule flex items-center justify-between pt-3">
-        <Badge tone="teal">{manifest.coverage.nationsWithData.join(', ')} coverage</Badge>
+        <Badge tone="brass">{manifest.coverage.nationsWithData.join(', ')} coverage</Badge>
         <Button variant="ghost" size="sm" onClick={onReset}>
           <RotateCcw className="h-3.5 w-3.5" aria-hidden />
           Reset

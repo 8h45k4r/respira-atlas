@@ -1,74 +1,96 @@
 /**
- * Palettes are colour-blind-conscious and avoid any red/green opposition.
+ * Data colour.
  *
- * The sequential ramp is a single-hue teal progression: it is monotonic in
- * lightness, so it survives greyscale printing and reads correctly for
- * deuteranopia and protanopia, where a red-green ramp does not. The diverging
- * ramp runs teal–neutral–purple for the same reason.
+ * The interface is Oxford blue (#002147) with brass as its counterpart. Data
+ * colour follows the same two hues so that a figure lifted out of the atlas and
+ * dropped into a report still reads as part of the same publication.
  *
- * Non-data states are intentionally outside both ramps: no reader should be able
- * to mistake "we do not know" for a value, however light.
+ * Both ramps are monotonic in lightness, so they survive greyscale printing and
+ * read correctly for deuteranopia and protanopia — which a red/green ramp does
+ * not. There is no red/green opposition anywhere in this file.
+ *
+ * Non-data states sit deliberately outside both ramps: no reader should be able
+ * to mistake "we do not know" for a value, however pale.
  */
 
-export const SEQUENTIAL_TEAL = [
-  '#e4f3f1', '#b9e1dd', '#7cc6c1', '#419f9d', '#1f6563',
+/** Oxford tints, light to dark. Used for every sequential choropleth. */
+export const SEQUENTIAL_OXFORD = [
+  '#dde7f1', '#a9c0da', '#6d8fba', '#2f558c', '#002147',
 ] as const;
 
-export const SEQUENTIAL_TEAL_7 = [
-  '#eef8f7', '#d2ebe8', '#aadcd7', '#7cc6c1', '#4ba8a4', '#2a8280', '#1a5453',
+export const SEQUENTIAL_OXFORD_7 = [
+  '#e9f0f6', '#c6d7e8', '#9cb6d3', '#7194bd', '#47719f', '#214e7c', '#002147',
 ] as const;
 
-/** Teal (low) → neutral → purple (high). No red/green dependence. */
-export const DIVERGING_TEAL_PURPLE = [
-  '#1f6563', '#7cc6c1', '#e8ebef', '#b49ccb', '#5b3f82',
+/**
+ * Brass (low) → neutral → Oxford (high). Used for difference-from-benchmark
+ * maps, where the two directions must be told apart at a glance without
+ * implying "good" and "bad" by colour alone.
+ */
+export const DIVERGING_BRASS_OXFORD = [
+  '#8a5f17', '#d8b468', '#eeeeec', '#6d8fba', '#002147',
 ] as const;
 
 export const NON_DATA_STYLES = {
   /** Published geography, no value supplied. */
-  missing: { fill: '#f1f5f9', stroke: '#cbd5e1', pattern: 'none' as const },
+  missing: { fill: '#f0efed', stroke: '#c9c6c0', pattern: 'none' as const },
   /** Withheld by the publisher under disclosure control. */
-  suppressed: { fill: '#e2e8f0', stroke: '#94a3b8', pattern: 'hatch' as const },
+  suppressed: { fill: '#e3e1dd', stroke: '#a3a099', pattern: 'hatch' as const },
   /** Nation not covered by the selected dataset. */
-  outsideCoverage: { fill: '#f8fafc', stroke: '#b6c2d1', pattern: 'diagonal' as const },
+  outsideCoverage: { fill: '#f8f8f7', stroke: '#c9c6c0', pattern: 'diagonal' as const },
   /** Geography type does not exist here. */
-  notApplicable: { fill: '#ffffff', stroke: '#cbd5e1', pattern: 'none' as const },
+  notApplicable: { fill: '#ffffff', stroke: '#e3e1dd', pattern: 'none' as const },
 } as const;
 
 export type NonDataStyleKey = keyof typeof NON_DATA_STYLES;
 
-/** Selection is shown by outline and a non-colour cue, never by changing fill. */
+/**
+ * Selection is shown by outline, never by changing a fill.
+ *
+ * Brass leads because it is the one hue that holds its own against every step
+ * of the Oxford ramp — a dark blue outline disappears into the top classes.
+ * The remaining three are chosen to stay separable from each other and from
+ * the map, and are categorical, not a scale.
+ */
 export const SELECTION = {
-  stroke: '#141f36',
+  stroke: '#a9791f',
   strokeWidth: 2.25,
-  /** Comparison slots get distinguishable outlines, not distinguishable fills. */
-  comparisonStrokes: ['#141f36', '#1f6563', '#5b3f82', '#8a5a1b'],
+  comparisonStrokes: ['#a9791f', '#0f766e', '#86198f', '#9a3412'],
 } as const;
 
 export const CHART_INK = {
-  axis: '#64748b',
-  grid: '#e2e8f0',
-  text: '#1f2d4d',
-  mutedText: '#475569',
-  benchmark: '#5b3f82',
-  series: '#1f6563',
-  interval: '#7cc6c1',
+  axis: '#767370',
+  grid: '#e3e1dd',
+  text: '#001734',
+  mutedText: '#585551',
+  /** Benchmark is brass and dashed: a reference, not another observation. */
+  benchmark: '#8a5f17',
+  series: '#002147',
+  interval: '#9cb6d3',
 } as const;
 
 export function sequentialRamp(classCount: number): readonly string[] {
   if (classCount <= 5) {
-    // Take an evenly spaced subset so a 3-class map still spans the full ramp.
-    const step = (SEQUENTIAL_TEAL.length - 1) / Math.max(1, classCount - 1);
+    // Evenly spaced subset, so a 3-class map still spans the whole ramp.
+    const step = (SEQUENTIAL_OXFORD.length - 1) / Math.max(1, classCount - 1);
     return Array.from({ length: classCount }, (_, i) =>
-      SEQUENTIAL_TEAL[Math.round(i * step)],
+      SEQUENTIAL_OXFORD[Math.round(i * step)],
     );
   }
-  const step = (SEQUENTIAL_TEAL_7.length - 1) / Math.max(1, classCount - 1);
+  const step = (SEQUENTIAL_OXFORD_7.length - 1) / Math.max(1, classCount - 1);
   return Array.from({ length: classCount }, (_, i) =>
-    SEQUENTIAL_TEAL_7[Math.round(i * step)],
+    SEQUENTIAL_OXFORD_7[Math.round(i * step)],
+  );
+}
+
+export function divergingRamp(classCount: number): readonly string[] {
+  const step = (DIVERGING_BRASS_OXFORD.length - 1) / Math.max(1, classCount - 1);
+  return Array.from({ length: classCount }, (_, i) =>
+    DIVERGING_BRASS_OXFORD[Math.round(i * step)],
   );
 }
 
 /** Text colour with sufficient contrast against a ramp swatch. */
 export function onRamp(index: number, classCount: number): string {
-  return index >= Math.ceil(classCount / 2) ? '#ffffff' : '#141f36';
+  return index >= Math.ceil(classCount / 2) ? '#ffffff' : '#001734';
 }

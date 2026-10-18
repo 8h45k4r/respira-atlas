@@ -218,13 +218,13 @@ function ExploreBody({
               <li key={`${step.kind}-${step.code ?? index}`} className="flex items-center gap-1">
                 {index > 0 ? <span aria-hidden className="text-slate-400">/</span> : null}
                 {index === breadcrumb.length - 1 ? (
-                  <span aria-current="page" className="font-semibold text-navy-900">
+                  <span aria-current="page" className="font-semibold text-oxford-900">
                     {step.label}
                   </span>
                 ) : (
                   <button
                     type="button"
-                    className="rounded underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
+                    className="rounded underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700"
                     onClick={() =>
                       step.kind === 'uk'
                         ? onChange({ nationFocus: null, selectedAreaCode: null })
@@ -240,7 +240,7 @@ function ExploreBody({
         </nav>
         <div className="ml-auto flex items-center gap-1.5">
           {state.comparisonAreaCodes.length > 0 ? (
-            <Badge tone="teal">
+            <Badge tone="brass">
               {state.comparisonAreaCodes.length} of {MAX_COMPARISON_AREAS} compared
             </Badge>
           ) : null}
@@ -264,8 +264,8 @@ function ExploreBody({
       ) : null}
 
       {searchNotice ? (
-        <div className="flex items-start gap-2 border-b border-teal-200 bg-teal-50 px-3 py-2" role="status">
-          <p className="flex-1 text-xs text-teal-900">{searchNotice}</p>
+        <div className="flex items-start gap-2 border-b border-brass-200 bg-brass-50 px-3 py-2" role="status">
+          <p className="flex-1 text-xs text-brass-900">{searchNotice}</p>
           <Button variant="ghost" size="sm" onClick={onDismissNotice}>Dismiss</Button>
         </div>
       ) : null}
@@ -397,7 +397,7 @@ function ExploreBody({
             />
           ) : (
             <div className="panel p-4">
-              <h2 className="text-sm font-semibold text-navy-900">Select a place</h2>
+              <h2 className="text-sm font-semibold text-oxford-900">Select a place</h2>
               <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
                 Choose an area on the map, search for a place, or pick a row in the data
                 table. The data table is fully keyboard-operable and does everything the
@@ -406,25 +406,25 @@ function ExploreBody({
               <dl className="mt-3 space-y-1.5 font-figure text-2xs">
                 <div className="flex justify-between gap-2">
                   <dt className="text-slate-500">Areas with a value</dt>
-                  <dd className="tabular-nums text-navy-900">
+                  <dd className="tabular-nums text-oxford-900">
                     {analysis.viewModel.counts.withValue}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-slate-500">No value published</dt>
-                  <dd className="tabular-nums text-navy-900">
+                  <dd className="tabular-nums text-oxford-900">
                     {analysis.viewModel.counts.missing}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-slate-500">Suppressed</dt>
-                  <dd className="tabular-nums text-navy-900">
+                  <dd className="tabular-nums text-oxford-900">
                     {analysis.viewModel.counts.suppressed}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-slate-500">Outside dataset coverage</dt>
-                  <dd className="tabular-nums text-navy-900">
+                  <dd className="tabular-nums text-oxford-900">
                     {analysis.viewModel.counts.outsideCoverage}
                   </dd>
                 </div>

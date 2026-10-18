@@ -64,8 +64,8 @@ export function EvidencePanel({
 }
 
 const TONES = {
-  descriptive: 'border-l-navy-700',
-  comparison: 'border-l-teal-600',
+  descriptive: 'border-l-oxford-700',
+  comparison: 'border-l-brass-600',
   uncertainty: 'border-l-amber-600',
 } as const;
 

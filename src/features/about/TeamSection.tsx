@@ -16,7 +16,7 @@ export function TeamSection({ heading = 'Team' }: { heading?: string }) {
   return (
     <section aria-labelledby="team-heading" className="space-y-5">
       <div className="max-w-3xl">
-        <h2 id="team-heading" className="text-lg font-semibold leading-tight text-navy-900">
+        <h2 id="team-heading" className="text-lg font-semibold leading-tight text-oxford-900">
           {heading}
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
@@ -64,13 +64,13 @@ function MemberCard({ member }: { member: TeamMember }) {
 
       <div className="min-w-0 flex-1">
         <header>
-          <h3 className="text-base font-semibold leading-snug text-navy-900">
+          <h3 className="text-base font-semibold leading-snug text-oxford-900">
             {member.name}
             {member.postNominals ? (
               <span className="font-normal text-slate-600">, {member.postNominals}</span>
             ) : null}
           </h3>
-          <p className="mt-0.5 text-sm font-medium text-teal-700">{member.role}</p>
+          <p className="mt-0.5 text-sm font-medium text-brass-700">{member.role}</p>
           <p className="mt-0.5 font-figure text-2xs text-slate-500">{member.roleDetail}</p>
         </header>
 
@@ -97,9 +97,9 @@ function MemberCard({ member }: { member: TeamMember }) {
             {member.email ? (
               <a
                 href={`mailto:${member.email}`}
-                className="inline-flex items-center gap-1 font-figure text-2xs text-teal-700
+                className="inline-flex items-center gap-1 font-figure text-2xs text-brass-700
                            underline-offset-2 hover:underline focus-visible:outline-none
-                           focus-visible:ring-2 focus-visible:ring-teal-700"
+                           focus-visible:ring-2 focus-visible:ring-brass-700"
               >
                 <Mail className="h-3 w-3" aria-hidden />
                 {member.email}
@@ -111,9 +111,9 @@ function MemberCard({ member }: { member: TeamMember }) {
                 href={link.url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 font-figure text-2xs text-teal-700
+                className="inline-flex items-center gap-1 font-figure text-2xs text-brass-700
                            underline-offset-2 hover:underline focus-visible:outline-none
-                           focus-visible:ring-2 focus-visible:ring-teal-700"
+                           focus-visible:ring-2 focus-visible:ring-brass-700"
               >
                 <ExternalLink className="h-3 w-3" aria-hidden />
                 {link.label}

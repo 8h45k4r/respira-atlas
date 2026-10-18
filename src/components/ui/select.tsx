@@ -15,8 +15,8 @@ export const SelectTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       'flex h-9 w-full items-center justify-between gap-2 rounded border border-slate-300 ' +
-        'bg-white px-2.5 py-1.5 text-left text-sm text-navy-900 ' +
-        'focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-1 ' +
+        'bg-white px-2.5 py-1.5 text-left text-sm text-oxford-900 ' +
+        'focus:outline-none focus:ring-2 focus:ring-brass-700 focus:ring-offset-1 ' +
         'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 ' +
         '[&>span]:line-clamp-1',
       className,
@@ -75,7 +75,7 @@ export const SelectItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex w-full cursor-default select-none flex-col items-start gap-0.5 ' +
-        'rounded px-2 py-1.5 pr-7 text-sm text-navy-900 outline-none ' +
+        'rounded px-2 py-1.5 pr-7 text-sm text-oxford-900 outline-none ' +
         'data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground ' +
         'data-[disabled]:pointer-events-none data-[disabled]:text-slate-400',
       className,
@@ -86,7 +86,7 @@ export const SelectItem = React.forwardRef<
     {hint ? <span className="text-2xs text-slate-500">{hint}</span> : null}
     <span className="absolute right-2 top-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-3.5 w-3.5 text-teal-700" aria-hidden />
+        <Check className="h-3.5 w-3.5 text-brass-700" aria-hidden />
       </SelectPrimitive.ItemIndicator>
     </span>
   </SelectPrimitive.Item>

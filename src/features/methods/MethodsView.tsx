@@ -19,7 +19,7 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
     <div className="mx-auto w-full max-w-[82rem] px-4 py-5">
       <div className="mb-4 max-w-3xl">
         <p className="label-caps">Methods</p>
-        <h2 className="mt-1 text-lg font-semibold leading-tight text-navy-900">
+        <h2 className="mt-1 text-lg font-semibold leading-tight text-oxford-900">
           How to read this atlas, and what it cannot tell you
         </h2>
       </div>
@@ -107,9 +107,9 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
                       onClick={() => setSelectedId(item.id)}
                       aria-current={item.id === selectedId ? 'true' : undefined}
                       className={`w-full border-l-2 px-2.5 py-1.5 text-left text-xs leading-snug transition-colors
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700 ${
                           item.id === selectedId
-                            ? 'border-teal-700 bg-accent font-medium text-navy-900'
+                            ? 'border-brass-700 bg-accent font-medium text-oxford-900'
                             : 'border-transparent text-slate-600 hover:bg-slate-50'
                         }`}
                     >
@@ -126,11 +126,11 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
             {indicator ? (
               <article className="min-w-0 space-y-4">
                 <header>
-                  <h3 className="text-base font-semibold leading-snug text-navy-900">
+                  <h3 className="text-base font-semibold leading-snug text-oxford-900">
                     {indicator.name}
                   </h3>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    <Badge tone="teal">Fingertips ID {indicator.id}</Badge>
+                    <Badge tone="brass">Fingertips ID {indicator.id}</Badge>
                     <Badge tone="neutral">{indicator.valueType}</Badge>
                     <Badge tone="neutral">{indicator.unit}</Badge>
                     <Badge tone="neutral">{indicator.yearType} year</Badge>
@@ -173,7 +173,7 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
                     <tbody>
                       {Object.values(indicator.geographies).map((geography) => (
                         <tr key={geography.areaTypeKey} className="border-b border-slate-100">
-                          <td className="py-1 pr-2 text-navy-900">{geography.label}</td>
+                          <td className="py-1 pr-2 text-oxford-900">{geography.label}</td>
                           <td className="py-1 pr-2 text-slate-600">{geography.boundaryVintage}</td>
                           <td className="py-1 pr-2 tabular-nums text-slate-600">
                             {geography.periodSeries
@@ -206,7 +206,7 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
                 {indicator.sourceLink ? (
                   <p className="font-figure text-2xs">
                     <a
-                      className="text-teal-700 underline underline-offset-2"
+                      className="text-brass-700 underline underline-offset-2"
                       href={indicator.sourceLink}
                       target="_blank"
                       rel="noreferrer noopener"
@@ -273,7 +273,7 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
               <tbody>
                 {Object.values(manifest.areaTypes).map((areaType) => (
                   <tr key={areaType.key} className="border-b border-slate-100">
-                    <td className="px-2 py-1.5 text-navy-900">{areaType.label}</td>
+                    <td className="px-2 py-1.5 text-oxford-900">{areaType.label}</td>
                     <td className="px-2 py-1.5 text-slate-600">
                       {areaType.mode === 'nhs' ? 'NHS' : 'Administrative'}
                     </td>
@@ -349,7 +349,7 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
                 the fill legend means.
               </li>
               <li>
-                Palettes are single-hue sequential or teal-to-purple diverging, with no
+                Palettes are single-hue sequential or brass-to-purple diverging, with no
                 red/green opposition, and non-data areas are styled outside the value
                 ramp entirely.
               </li>
@@ -455,8 +455,8 @@ function Prose({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="max-w-3xl space-y-3 text-sm leading-relaxed text-slate-700
-                 [&_h3]:mt-5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-navy-900
-                 [&_li]:leading-relaxed [&_strong]:font-semibold [&_strong]:text-navy-900
+                 [&_h3]:mt-5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-oxford-900
+                 [&_li]:leading-relaxed [&_strong]:font-semibold [&_strong]:text-oxford-900
                  [&_ul]:list-outside [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5"
     >
       {children}
@@ -506,12 +506,12 @@ function Ladder() {
         <li
           key={rung.label}
           className={`border-l-2 pl-3 ${
-            rung.supported ? 'border-teal-600' : 'border-amber-500'
+            rung.supported ? 'border-brass-600' : 'border-amber-500'
           }`}
         >
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-navy-900">{rung.label}</span>
-            <Badge tone={rung.supported ? 'teal' : 'warn'}>
+            <span className="text-xs font-semibold text-oxford-900">{rung.label}</span>
+            <Badge tone={rung.supported ? 'brass' : 'warn'}>
               {rung.supported ? 'supported here' : 'not supported here'}
             </Badge>
           </div>

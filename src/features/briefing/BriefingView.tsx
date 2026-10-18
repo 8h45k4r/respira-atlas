@@ -222,7 +222,7 @@ function BriefingBody({
         <div className="space-y-3.5 no-print">
           <div>
             <p className="label-caps">Publication composer</p>
-            <h2 className="mt-1 text-lg font-semibold leading-tight text-navy-900">
+            <h2 className="mt-1 text-lg font-semibold leading-tight text-oxford-900">
               Prepare a briefing
             </h2>
             <p className="mt-1 text-xs leading-relaxed text-slate-600">
@@ -272,7 +272,7 @@ function BriefingBody({
                   onChange={(event) => setHeadline(event.target.value)}
                   placeholder="Leave blank to use the analytical question"
                   className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-teal-700"
+                             focus:outline-none focus:ring-2 focus:ring-brass-700"
                 />
                 {headline.trim() !== '' ? (
                   <p className="mt-1 text-2xs text-amber-800">
@@ -283,7 +283,7 @@ function BriefingBody({
 
               <div className="rule space-y-2 pt-3">
                 <Button
-                  variant="teal" className="w-full"
+                  variant="brass" className="w-full"
                   onClick={() => run(() => downloadSvg(primarySvg, `${basename}-${layout}`))}
                 >
                   <FileCode className="h-3.5 w-3.5" aria-hidden />
@@ -417,9 +417,9 @@ function PrintBrief({
   const evidence = analysis.evidence;
   return (
     <article className="mx-auto max-w-[794px] border border-slate-300 bg-white p-8 print:border-0 print:p-0">
-      <header className="border-b-2 border-navy-800 pb-2">
+      <header className="border-b-2 border-oxford-800 pb-2">
         <p className="label-caps">Evidence brief</p>
-        <h1 className="mt-1 text-xl font-semibold leading-tight tracking-[-0.015em] text-navy-900">
+        <h1 className="mt-1 text-xl font-semibold leading-tight tracking-[-0.015em] text-oxford-900">
           {headline || analysis.question}
         </h1>
         {headline ? (

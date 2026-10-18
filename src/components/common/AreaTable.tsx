@@ -132,11 +132,11 @@ export function AreaTable({
                     }
                   : {})}
               >
-                <th scope="row" className="px-2 py-1 font-normal text-navy-900">
+                <th scope="row" className="px-2 py-1 font-normal text-oxford-900">
                   <span className="flex items-center gap-1.5">
                     {/* Non-colour cue for selection. */}
                     {isSelected ? (
-                      <span aria-label="Selected" className="font-semibold text-navy-900">▸</span>
+                      <span aria-label="Selected" className="font-semibold text-oxford-900">▸</span>
                     ) : comparisonIndex >= 0 ? (
                       <span aria-label={`Comparison ${comparisonIndex + 1}`} className="text-slate-500">
                         {comparisonIndex + 1}
@@ -146,7 +146,7 @@ export function AreaTable({
                   </span>
                 </th>
                 <td className="px-2 py-1 text-slate-600">{area.nation}</td>
-                <td className="px-2 py-1 text-right tabular-nums text-navy-900">
+                <td className="px-2 py-1 text-right tabular-nums text-oxford-900">
                   {isPresent(o) ? formatValue(o.value, indicator) : '—'}
                 </td>
                 <td className="px-2 py-1 text-right tabular-nums text-slate-600">
@@ -205,8 +205,8 @@ function SortableHeader({
         type="button"
         onClick={onClick}
         className={cn(
-          'inline-flex items-center gap-1 rounded hover:text-navy-900',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700',
+          'inline-flex items-center gap-1 rounded hover:text-oxford-900',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700',
         )}
       >
         {label}

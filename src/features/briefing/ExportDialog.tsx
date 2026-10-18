@@ -155,8 +155,8 @@ export function ExportDialog({
                 maxLength={180}
                 placeholder="Write your own headline, or leave blank to use the analytical question"
                 className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 text-sm
-                           text-navy-900 placeholder:text-slate-400
-                           focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-1"
+                           text-oxford-900 placeholder:text-slate-400
+                           focus:outline-none focus:ring-2 focus:ring-brass-700 focus:ring-offset-1"
               />
               {headline.trim() !== '' ? (
                 <p className="mt-1 text-2xs leading-relaxed text-amber-800">
@@ -173,7 +173,7 @@ export function ExportDialog({
                 checked={includeEvidence}
                 onChange={(event) => setIncludeEvidence(event.target.checked)}
                 disabled={!analysis.evidence || Boolean(analysis.evidence.unavailable)}
-                className="mt-0.5 h-3.5 w-3.5 accent-teal-700"
+                className="mt-0.5 h-3.5 w-3.5 accent-brass-700"
               />
               <span>
                 Include the evidence statement
@@ -188,7 +188,7 @@ export function ExportDialog({
             <div className="rule space-y-2 pt-3">
               <Button
                 className="w-full"
-                variant="teal"
+                variant="brass"
                 disabled={busy}
                 onClick={() => run(() => downloadSvg(svg, basename))}
               >

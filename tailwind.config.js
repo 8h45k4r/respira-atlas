@@ -12,29 +12,41 @@ export default {
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       colors: {
-        navy: {
-          50: '#f3f6fa', 100: '#e4eaf3', 200: '#c6d3e6', 300: '#9bb0d1',
-          400: '#6c86b6', 500: '#4b659c', 600: '#3a5082', 700: '#2f4069',
-          800: '#1f2d4d', 900: '#141f36', 950: '#0b1322',
+        /*
+         * Oxford blue. #002147 is the primary; the scale is built around it so
+         * the brand colour is a real working step, not a one-off accent bolted
+         * onto a generic grey UI.
+         */
+        oxford: {
+          50: '#f2f6fa', 100: '#e2eaf3', 200: '#c3d3e6', 300: '#9ab3d2',
+          400: '#6a8cb8', 500: '#44679c', 600: '#2a4c7f', 700: '#153663',
+          800: '#002147', 900: '#001734', 950: '#000e21',
         },
+        /*
+         * Brass. The secondary, used for interaction, annotation and anything
+         * that must stay legible on top of a blue choropleth. Navy and brass is
+         * a long-standing institutional pairing and, more practically, brass is
+         * the one hue that contrasts against every step of the Oxford ramp.
+         */
+        brass: {
+          50: '#fbf7ef', 100: '#f4e9d2', 200: '#e8d1a0', 300: '#d8b468',
+          400: '#c5973e', 500: '#a9791f', 600: '#8a5f17', 700: '#6b4813',
+          800: '#4a3210', 900: '#2e1f0a',
+        },
+        /* Neutrals, very slightly warm so they sit with brass rather than fight it. */
         slate: {
-          50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1',
-          400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155',
-          800: '#1e293b', 900: '#0f172a', 950: '#020617',
+          50: '#f8f8f7', 100: '#f0efed', 200: '#e3e1dd', 300: '#c9c6c0',
+          400: '#a3a099', 500: '#767370', 600: '#585551', 700: '#42403c',
+          800: '#2b2a27', 900: '#1a1917', 950: '#0f0e0d',
         },
-        teal: {
-          50: '#effbf9', 100: '#d6f4ef', 200: '#ade8e0', 300: '#7bd5cc',
-          400: '#49b9b1', 500: '#2f9d97', 600: '#237e7b', 700: '#1f6563',
-          800: '#1d5151', 900: '#1b4344', 950: '#0a2628',
-        },
-        border: 'hsl(214 28% 88%)',
-        input: 'hsl(214 28% 88%)',
-        ring: 'hsl(187 58% 34%)',
+        border: '#e3e1dd',
+        input: '#d6d3cd',
+        ring: '#8a5f17',
         background: '#ffffff',
-        foreground: '#141f36',
-        muted: { DEFAULT: '#f3f6fa', foreground: '#475569' },
-        accent: { DEFAULT: '#effbf9', foreground: '#1f6563' },
-        destructive: { DEFAULT: '#9f1239', foreground: '#ffffff' },
+        foreground: '#001734',
+        muted: { DEFAULT: '#f5f6f8', foreground: '#585551' },
+        accent: { DEFAULT: '#f4e9d2', foreground: '#6b4813' },
+        destructive: { DEFAULT: '#8c2f1b', foreground: '#ffffff' },
       },
       borderRadius: { lg: '0.375rem', md: '0.25rem', sm: '0.125rem' },
       fontSize: {

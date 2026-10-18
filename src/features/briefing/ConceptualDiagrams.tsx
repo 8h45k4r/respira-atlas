@@ -100,7 +100,7 @@ export function ConceptualDiagrams({ indicator }: { indicator: Indicator }) {
         <div className="flex items-center gap-2">
           <Badge tone="warn">Conceptual figure — contains no data</Badge>
           <Button
-            variant="teal"
+            variant="brass"
             size="sm"
             onClick={() => downloadSvg(svg, `conceptual-${kind}`)}
           >

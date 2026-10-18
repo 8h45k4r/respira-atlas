@@ -27,11 +27,11 @@
 
   /* Visible, high-contrast focus on every interactive element. */
   :focus-visible {
-    @apply outline-none ring-2 ring-teal-700 ring-offset-2 ring-offset-background;
+    @apply outline-none ring-2 ring-brass-700 ring-offset-2 ring-offset-background;
   }
 
   h1, h2, h3, h4 {
-    @apply font-sans tracking-[-0.011em] text-navy-900;
+    @apply font-sans tracking-[-0.011em] text-oxford-900;
     text-wrap: balance;
   }
 
@@ -67,12 +67,12 @@
     @apply text-sm leading-relaxed text-slate-700;
   }
   .prose-evidence strong {
-    @apply font-semibold text-navy-900;
+    @apply font-semibold text-oxford-900;
   }
 
   /* Skip link, visible only when focused. */
   .skip-link {
-    @apply absolute left-4 top-0 z-50 -translate-y-full bg-navy-900 px-4 py-2 text-sm
+    @apply absolute left-4 top-0 z-50 -translate-y-full bg-oxford-900 px-4 py-2 text-sm
            font-medium text-white transition-transform focus:translate-y-2;
   }
 

@@ -120,7 +120,7 @@ function ExplainBody({
   if (!selectedArea) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-10">
-        <h2 className="text-lg font-semibold text-navy-900">Choose a place to explain</h2>
+        <h2 className="text-lg font-semibold text-oxford-900">Choose a place to explain</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
           This workspace turns one selection into a statement you can defend: what was
           observed, how it compares with England, what uncertainty remains, and what you
@@ -155,7 +155,7 @@ function ExplainBody({
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="label-caps">Evidence statement</p>
-          <h2 className="mt-1 text-xl font-semibold leading-tight tracking-[-0.015em] text-navy-900">
+          <h2 className="mt-1 text-xl font-semibold leading-tight tracking-[-0.015em] text-oxford-900">
             {evidence?.unavailable
               ? `${indicator.shortName} in ${selectedArea.name}: no value available`
               : `${indicator.shortName} in ${selectedArea.name}, ${analysis.period}`}
@@ -170,7 +170,7 @@ function ExplainBody({
             {copied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Share2 className="h-3.5 w-3.5" aria-hidden />}
             {copied ? 'Link copied' : 'Share'}
           </Button>
-          <Button variant="teal" size="sm" onClick={() => onChange({ mode: 'briefing' })}>
+          <Button variant="brass" size="sm" onClick={() => onChange({ mode: 'briefing' })}>
             Prepare a briefing
             <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </Button>
@@ -335,7 +335,7 @@ function ExplainBody({
 
         <aside className="space-y-3">
           <div className="panel p-4">
-            <h3 className="text-sm font-semibold text-navy-900">Interpretation</h3>
+            <h3 className="text-sm font-semibold text-oxford-900">Interpretation</h3>
             <div className="mt-3">
               {evidence ? <EvidencePanel statement={evidence} /> : null}
             </div>
@@ -343,7 +343,7 @@ function ExplainBody({
 
           {comparison ? (
             <div className="panel p-4">
-              <h3 className="text-sm font-semibold text-navy-900">
+              <h3 className="text-sm font-semibold text-oxford-900">
                 Magnitude and evidence are different things
               </h3>
               <p className="mt-2 text-xs leading-relaxed text-slate-700">
@@ -361,13 +361,13 @@ function ExplainBody({
           ) : null}
 
           <div className="panel p-4">
-            <h3 className="text-sm font-semibold text-navy-900">Evidence provenance</h3>
+            <h3 className="text-sm font-semibold text-oxford-900">Evidence provenance</h3>
             <div className="mt-2.5">
               {evidence ? <ProvenanceList statement={evidence} /> : null}
             </div>
             {indicator.definition ? (
               <details className="mt-3">
-                <summary className="cursor-pointer text-xs font-medium text-teal-700">
+                <summary className="cursor-pointer text-xs font-medium text-brass-700">
                   Indicator definition
                 </summary>
                 <p className="mt-1.5 whitespace-pre-line text-2xs leading-relaxed text-slate-600">
@@ -377,7 +377,7 @@ function ExplainBody({
             ) : null}
             {indicator.methodology ? (
               <details className="mt-2">
-                <summary className="cursor-pointer text-xs font-medium text-teal-700">
+                <summary className="cursor-pointer text-xs font-medium text-brass-700">
                   Method as published
                 </summary>
                 <p className="mt-1.5 whitespace-pre-line text-2xs leading-relaxed text-slate-600">

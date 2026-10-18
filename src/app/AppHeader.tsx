@@ -23,7 +23,7 @@ export function AppHeader({
     <header className="border-b border-slate-200 bg-white no-print">
       <div className="mx-auto flex max-w-[110rem] flex-wrap items-end justify-between gap-x-6 gap-y-2 px-4 pb-0 pt-3">
         <div className="min-w-0">
-          <h1 className="text-[1.0625rem] font-semibold leading-tight tracking-[-0.015em] text-navy-900">
+          <h1 className="text-[1.0625rem] font-semibold leading-tight tracking-[-0.015em] text-oxford-900">
             UK Respiratory Health Evidence Atlas
           </h1>
           <p className="mt-0.5 text-xs text-slate-600">
@@ -32,7 +32,7 @@ export function AppHeader({
         </div>
         {manifest ? (
           <div className="flex flex-wrap items-center gap-1.5 pb-1">
-            <Badge tone="teal">
+            <Badge tone="brass">
               {manifest.indicators.length} verified indicators
             </Badge>
             <Badge tone="warn">
@@ -59,10 +59,10 @@ export function AppHeader({
                   title={item.hint}
                   className={cn(
                     'flex items-center gap-1.5 border-b-2 px-2.5 py-2 text-sm font-medium transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700',
                     active
-                      ? 'border-teal-700 text-navy-900'
-                      : 'border-transparent text-slate-600 hover:text-navy-800',
+                      ? 'border-brass-700 text-oxford-900'
+                      : 'border-transparent text-slate-600 hover:text-oxford-800',
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" aria-hidden />

@@ -55,7 +55,7 @@ export function FigureFrame({
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-4 py-3">
         <div className="min-w-0 flex-1">
-          <h2 id={headingId} className="text-[0.95rem] font-semibold leading-snug text-navy-900">
+          <h2 id={headingId} className="text-[0.95rem] font-semibold leading-snug text-oxford-900">
             {question}
           </h2>
           {indicatorName ? (
@@ -81,7 +81,7 @@ export function FigureFrame({
             </Dialog>
           ) : null}
           {onExport ? (
-            <Button variant="teal" size="sm" onClick={onExport}>
+            <Button variant="brass" size="sm" onClick={onExport}>
               <Download className="h-3.5 w-3.5" aria-hidden />
               {exportLabel}
             </Button>

@@ -253,8 +253,8 @@ function ScatterBody({
             )
           }
           className="rounded border border-slate-200 px-1.5 py-0.5 font-figure text-2xs
-                     text-slate-600 hover:border-teal-400 hover:text-navy-900
-                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
+                     text-slate-600 hover:border-brass-400 hover:text-oxford-900
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700"
         >
           Export scatter SVG
         </button>

@@ -9,7 +9,7 @@ export function LoadingState({ label }: { label: string }) {
       role="status"
       aria-live="polite"
     >
-      <Loader2 className="h-4 w-4 animate-spin text-teal-700" aria-hidden />
+      <Loader2 className="h-4 w-4 animate-spin text-brass-700" aria-hidden />
       <p className="text-xs text-slate-600">{label}</p>
     </div>
   );
@@ -28,7 +28,7 @@ export function ErrorState({
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-navy-900">{title}</h3>
+          <h3 className="text-sm font-semibold text-oxford-900">{title}</h3>
           <p className="mt-1 text-xs leading-relaxed text-slate-700">{error.message}</p>
           {onRetry ? (
             <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
@@ -53,7 +53,7 @@ export function UnsupportedState({
     <div className="flex min-h-40 flex-col items-start gap-2 border border-dashed border-slate-300 bg-slate-50/60 p-5">
       <div className="flex items-center gap-2">
         <Ban className="h-3.5 w-3.5 text-slate-500" aria-hidden />
-        <h3 className="text-sm font-semibold text-navy-900">{title}</h3>
+        <h3 className="text-sm font-semibold text-oxford-900">{title}</h3>
       </div>
       <div className="text-xs leading-relaxed text-slate-700">{explanation}</div>
       {action}
@@ -65,7 +65,7 @@ export function EmptyState({ title, explanation }: { title: string; explanation:
   return (
     <div className="flex min-h-40 flex-col items-center justify-center gap-2 p-8 text-center">
       <FileQuestion className="h-5 w-5 text-slate-400" aria-hidden />
-      <h3 className="text-sm font-semibold text-navy-900">{title}</h3>
+      <h3 className="text-sm font-semibold text-oxford-900">{title}</h3>
       <div className="max-w-md text-xs leading-relaxed text-slate-600">{explanation}</div>
     </div>
   );

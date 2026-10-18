@@ -118,8 +118,8 @@ export function InequalityFigure({
             type="button"
             onClick={() => setOpen(true)}
             className="rounded border border-slate-300 px-2.5 py-1 text-xs font-medium
-                       text-navy-800 hover:bg-slate-50 focus-visible:outline-none
-                       focus-visible:ring-2 focus-visible:ring-teal-700"
+                       text-oxford-800 hover:bg-slate-50 focus-visible:outline-none
+                       focus-visible:ring-2 focus-visible:ring-brass-700"
           >
             Load subgroup breakdowns
           </button>

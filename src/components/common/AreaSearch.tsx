@@ -155,8 +155,8 @@ export function AreaSearch({
             }
           }}
           className="h-9 w-full rounded border border-slate-300 bg-white pl-8 pr-2.5 text-sm
-                     text-navy-900 placeholder:text-slate-400
-                     focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-1"
+                     text-oxford-900 placeholder:text-slate-400
+                     focus:outline-none focus:ring-2 focus:ring-brass-700 focus:ring-offset-1"
         />
       </div>
 
@@ -198,7 +198,7 @@ export function AreaSearch({
                   <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-navy-900">{entry.name}</span>
+                  <span className="block truncate text-oxford-900">{entry.name}</span>
                   <span className="block text-2xs text-slate-500">
                     {entry.kind === 'settlement'
                       ? `Settlement in ${entry.nation}${

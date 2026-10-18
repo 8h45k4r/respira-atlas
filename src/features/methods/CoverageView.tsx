@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/select';
 
 const STATUS_STYLE: Record<CoverageStatus, { label: string; cell: string; symbol: string }> = {
-  data: { label: 'Data available', cell: 'bg-teal-600 text-white', symbol: '●' },
+  data: { label: 'Data available', cell: 'bg-brass-600 text-white', symbol: '●' },
   'no-data': { label: 'Geography exists, indicator not published', cell: 'bg-slate-200 text-slate-700', symbol: '○' },
   'boundary-only': { label: 'Boundary only — nation not covered by this dataset', cell: 'bg-white text-slate-500 border border-dashed border-slate-400', symbol: '/' },
   'not-applicable': { label: 'Geography type does not exist in this nation', cell: 'bg-white text-slate-400', symbol: '–' },
@@ -63,7 +63,7 @@ export function CoverageView({
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-3xl">
           <p className="label-caps">Coverage</p>
-          <h2 className="mt-1 text-lg font-semibold leading-tight text-navy-900">
+          <h2 className="mt-1 text-lg font-semibold leading-tight text-oxford-900">
             What is published, where, and for which periods
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-700">
@@ -130,11 +130,11 @@ export function CoverageView({
                 <tr key={indicator.id} className="border-b border-slate-100">
                   <th
                     scope="row"
-                    className="sticky left-0 z-10 bg-white px-2 py-1.5 font-normal text-navy-900"
+                    className="sticky left-0 z-10 bg-white px-2 py-1.5 font-normal text-oxford-900"
                   >
                     <button
                       type="button"
-                      className="text-left underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
+                      className="text-left underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700"
                       onClick={() =>
                         onChange({
                           mode: 'explore',
@@ -188,7 +188,7 @@ export function CoverageView({
 
       {manifest.excludedIndicators.length > 0 ? (
         <section className="mt-6">
-          <h3 className="text-sm font-semibold text-navy-900">
+          <h3 className="text-sm font-semibold text-oxford-900">
             Candidate indicators excluded from this release
           </h3>
           <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-700">
@@ -199,7 +199,7 @@ export function CoverageView({
             {manifest.excludedIndicators.map((excluded) => (
               <li key={excluded.id} className="border border-slate-200 bg-slate-50/60 p-2.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-figure text-xs font-semibold text-navy-900">
+                  <span className="font-figure text-xs font-semibold text-oxford-900">
                     Indicator {excluded.id}
                   </span>
                   {excluded.verifiedEmpty ? (
