@@ -4,9 +4,15 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
-  # No runtime backend, no secrets, no third-party calls at runtime: everything
-  # the page needs is served from this origin, except the webfonts.
-  Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'none'
+  # No runtime backend and no secrets: everything the page needs is served from
+  # this origin, except the webfonts.
+  #
+  # static.cloudflareinsights.com is allowed because Cloudflare injects its Web
+  # Analytics beacon into every response when analytics is enabled on the zone.
+  # It is cookieless and collects no personal data. Blocking it did not disable
+  # analytics, it only produced a CSP error on every page load. To remove it
+  # properly, turn Web Analytics off for the zone and drop these two entries.
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; frame-ancestors 'self'; base-uri 'self'; form-action 'none'
 
 # Hashed build assets are immutable.
 /assets/*
