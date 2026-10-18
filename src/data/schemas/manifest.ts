@@ -123,6 +123,9 @@ export const manifestSchema = z.object({
   /** 'real' or 'demonstration'. The UI banners loudly on anything but 'real'. */
   dataKind: z.enum(['real', 'demonstration']),
   profile: z.object({ id: z.number(), name: z.string(), key: z.string() }),
+  sourceProfiles: z.array(
+    z.object({ id: z.number(), name: z.string(), key: z.string() }),
+  ),
   coverage: z.object({
     nationsWithData: z.array(z.string()),
     nationsVisibleWithoutData: z.array(z.string()),

@@ -396,11 +396,23 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
           <Prose>
             <h3>Sources</h3>
             <p>
-              Observations come from the {manifest.profile.name} profile
-              (“{manifest.profile.key}”) published by{' '}
-              {manifest.licences.observations.publisher} through Fingertips. Boundaries
-              come from the {manifest.licences.boundaries.publisher}. The dataset bundled
-              with this build was prepared on {formatDate(manifest.generatedAt)}.
+              Observations come from {manifest.sourceProfiles.length} profiles published
+              by {manifest.licences.observations.publisher} through Fingertips.
+              Boundaries come from the {manifest.licences.boundaries.publisher}. The
+              dataset bundled with this build was prepared on{' '}
+              {formatDate(manifest.generatedAt)}.
+            </p>
+            <ul>
+              {manifest.sourceProfiles.map((source) => (
+                <li key={source.id}>
+                  <strong>{source.name}</strong> — profile {source.id} (“{source.key}”)
+                </li>
+              ))}
+            </ul>
+            <p>
+              An indicator is attributed to the profile it was retrieved through. Several
+              measures appear in more than one Fingertips profile; the figures are the
+              same, and the profile recorded here is the one this pipeline used.
             </p>
             <h3>Licensing and attribution</h3>
             <p>{manifest.licences.observations.attribution}</p>

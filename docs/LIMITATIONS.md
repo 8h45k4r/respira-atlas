@@ -34,9 +34,14 @@ that a direct comparison would not be valid even once the data were in hand.
 
 ## Indicators
 
-- **14 indicators**, not the full respiratory profile. The source profile holds
-  34; the rest were either not published at a supported geography or outside the
-  scope of this release.
+- **35 indicators across 11 topics**, drawn from 5 Fingertips profiles. This is
+  a curated release, not a mirror of Fingertips: the source holds many hundreds
+  of indicators, and a shallow catalogue of unvalidated measures would be worse
+  than a small verified one.
+- Topic depth is uneven and follows the data rather than ambition. Respiratory
+  has 12 indicators; cancer, metabolic health, alcohol and environment have one
+  or two each. A topic chip shows its count so the thinness is visible before
+  you click it.
 - **Fuel poverty (93759) is excluded** — declared available by the source's own
   index at eight geographies, returns no rows at any. Recorded as a source
   discrepancy in the Coverage view.
@@ -57,6 +62,24 @@ that a direct comparison would not be valid even once the data were in hand.
   There is no deprivation-decile or ethnicity breakdown in this release.
 - Inequality is reported as a gap between published subgroups within one area
   and period. No slope index of inequality or similar summary measure is computed.
+
+## Expansion work not yet done
+
+- **Dedicated modes** for population comparison, change over time and
+  inequalities. The underlying analysis exists — the workspace already carries
+  a trend figure, a dot-and-whisker comparison, an inequality panel and a
+  relationships scatter — but they are panels inside the place explorer rather
+  than first-class modes with their own framing.
+- **Evidence stories** as authored, data-backed narratives. The "Explain a
+  finding" workspace produces the same material for any selection, but there is
+  no curated set of worked questions.
+- **Chart patterns** named in the brief that are not built: population pyramid
+  (needs compatible denominator data this release does not carry), heatmap of
+  age × time, treemap, and annotated charts.
+- **Age as a selectable dimension.** The data model carries age and the
+  pipeline preserves source age bands, but no indicator in this release
+  publishes multiple age groups within its primary series, so no age control is
+  shown. Adding one now would be a control that does nothing.
 
 ## Not implemented
 

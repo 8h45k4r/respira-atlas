@@ -1,11 +1,12 @@
-# UK Respiratory Health Evidence Atlas
+# Public Health Evidence Atlas
 
-**Place-based evidence for respiratory health research and public decisions.**
+**Understand health across people, places, and time.**
 
-An interactive, research-grade atlas of respiratory health indicators for the
-UK. It is built for people who have to defend a claim: NHS analysts,
-public-health researchers, local-authority teams and anyone who needs to say
-something accurate about geographic variation and be able to show their working.
+An interactive, research-grade atlas of public health indicators for England,
+shown on a UK map. It is built for people who have to defend a claim: NHS
+analysts, public-health researchers, local-authority teams and anyone who needs
+to say something accurate about health across people, places and time, and be
+able to show their working.
 
 It answers a narrow set of questions honestly rather than a wide set vaguely:
 
@@ -67,6 +68,10 @@ the screen.
 
 ## The three modes
 
+**Start here** — a discovery page with four ways in: explore a place, explore a
+topic, compare populations, or follow an evidence story. Every question, date
+and count on it is read from the prepared dataset; none is written in advance.
+
 **Explore places** — a map-led workspace. Choropleth, linked detail panel,
 trend, dot-and-whisker comparison, inequality breakdown, exposure/outcome
 scatter, and a fully keyboard-operable data table that does everything the map
@@ -91,17 +96,20 @@ Plus **Coverage** (the indicator × nation × geography matrix) and **Methods**
 
 | | |
 |---|---|
-| Indicators | **14**, all real, resolved from source metadata |
-| Source | OHID Fingertips, respiratory disease ("INHALE") profile, ID 29 |
+| Indicators | **35**, all real, resolved from source metadata |
+| Topics | **11** — Population health, Respiratory, Cardiovascular, Cancer, Mental health, Child health, Metabolic, Alcohol and drugs, Risk factors, Environment, Determinants |
+| Source | OHID Fingertips, across **5 profiles**: Respiratory disease, Adult mental health and wellbeing, Child and Maternal Health, Mortality Profile, Cardiovascular Disease |
 | Coverage | **England only** — by the source's nature, not by choice |
 | Geographies | 153 upper-tier local authorities · 42 ICBs · 7 NHS England regions |
 | Boundaries | ONS Open Geography Portal, 218 UK counties and unitary authorities, 4 UK nations |
 | Benchmark | England (the publisher's own England row, never a mean of local values) |
 | Settlements | 8,545 built-up areas for place search, each resolved to its containing area |
 
-Indicators cover COPD, asthma, respiratory mortality, emergency admissions,
-pneumonia, childhood outcomes (bronchiolitis, childhood asthma), smoking
-prevalence and PM2.5 air pollution. Every one keeps its full published metadata:
+Indicators span life expectancy and all-cause mortality, respiratory disease,
+cardiovascular disease, cancer, mental health, child and maternal health,
+obesity, alcohol, smoking and physical inactivity, air quality and deprivation.
+The respiratory collection is retained in full as a first-class topic. Every
+indicator keeps its full published metadata:
 definition, numerator and denominator, method, standard population, confidence
 interval method, disclosure control, caveats, licence and retrieval date.
 
@@ -123,8 +131,8 @@ The prepared dataset is committed, so the app runs offline with no API access.
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` | Production build to `dist/` |
-| `npm test` | 74 unit tests |
-| `npm run smoke` | 21 browser tests against the production build |
+| `npm test` | 75 unit tests |
+| `npm run smoke` | 26 browser tests against the production build |
 | `npm run data:validate` | Checks the committed dataset for violations |
 | `npm run data:prepare` | Re-fetches everything from source (~3 minutes) |
 
@@ -132,16 +140,19 @@ The prepared dataset is committed, so the app runs offline with no API access.
 
 All of the following were run and passed on the committed tree:
 
-- **74 unit tests** — classification and breakpoints, benchmark comparison,
+- **75 unit tests** — classification and breakpoints, benchmark comparison,
   comparability gating, the missing/suppressed/zero distinction, evidence-statement
   eligibility, URL round trips, columnar decode integrity, and SVG export content.
-- **21 browser tests** — UK-only map, all four nations present, out-of-coverage
-  nations visibly unsupported, city search disambiguation, drill-down and Back,
-  shared-URL restoration, keyboard area selection, NHS/administrative
-  independence, compatible comparison, SVG/PNG/CSV/JSON downloads (including an
-  assertion that the SVG holds real vector paths and no raster), print briefing,
-  recoverable load failure, SPA fallback, and zero console errors.
-- **Data validation** — 14 indicators, 3 geographies, 168 coverage rows,
+- **26 browser tests** — discovery driven by real metadata, an accurate
+  multi-profile coverage statement, topic entry points, UK-only map, all four
+  nations present, out-of-coverage nations visibly unsupported, city search
+  disambiguation, drill-down and Back, shared-URL restoration, keyboard area
+  selection, NHS/administrative independence, compatible comparison, a measure
+  with no combined figure explaining itself, unavailable indicators disabled
+  with reasons, SVG/PNG/CSV/JSON downloads (including an assertion that the SVG
+  holds real vector paths and no raster), print briefing, recoverable load
+  failure, SPA fallback, and zero console errors.
+- **Data validation** — 35 indicators, 3 geographies, 420 coverage rows,
   206 area entries, no violations.
 
 See [docs/TESTING.md](docs/TESTING.md) for the output.
@@ -164,6 +175,11 @@ in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 React 18 · TypeScript (strict) · Vite 6 · Tailwind CSS 3 · Radix UI primitives ·
 amCharts 5.21.2 (interactive map) · d3-geo (export projection) · Zod (runtime
 schema validation). All dependencies pinned to exact versions.
+
+The interface is Oxford blue (#002147) with brass as its counterpart; data
+colour follows the same two hues so a figure lifted into a report still reads as
+part of the same publication. Both map ramps are monotonic in lightness and
+carry no red/green opposition.
 
 Interactive maps use amCharts under its free licence, which requires the
 attribution link that is present on the map and has not been removed. No licence

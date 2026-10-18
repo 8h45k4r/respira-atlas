@@ -723,16 +723,29 @@ async function main() {
     schemaVersion: DATA_SCHEMA_VERSION,
     generatedAt: RETRIEVED_AT,
     dataKind: 'real',
+    /*
+     * Every source profile actually drawn on, derived from the indicators that
+     * survived verification. The release used to come from one profile and the
+     * manifest named it; now that it spans several, naming only the first would
+     * misdescribe the dataset on the front page.
+     */
     profile: { id: profile.Id, name: profile.Name, key: profile.Key },
+    sourceProfiles: [...new Set(usable.map((d) => d.profileId))]
+      .sort((a, b) => a - b)
+      .map((id) => {
+        const match = profiles.find((candidate) => candidate.Id === id);
+        return { id, name: match?.Name ?? `Profile ${id}`, key: match?.Key ?? String(id) };
+      }),
     coverage: {
       nationsWithData: ['England'],
       nationsVisibleWithoutData: ['Scotland', 'Wales', 'Northern Ireland'],
       benchmark: { areaCode: ENGLAND_AREA_CODE, label: 'England', scope: 'England' },
       statement:
-        'All indicators in this release come from the OHID Fingertips respiratory disease ' +
-        '(INHALE) profile, which publishes England only. Scotland, Wales and Northern Ireland ' +
-        'remain navigable but are shown as not covered by this dataset. No UK-wide benchmark ' +
-        'is computed.',
+        `Every indicator in this release comes from OHID Fingertips, across ` +
+        `${[...new Set(usable.map((d) => d.profileId))].length} published profiles. ` +
+        'Fingertips publishes England only, so Scotland, Wales and Northern Ireland remain ' +
+        'navigable but are shown as not covered by this dataset, and no UK-wide benchmark is ' +
+        'computed anywhere.',
     },
     geographyModes: {
       administrative: {

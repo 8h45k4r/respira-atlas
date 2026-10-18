@@ -3,6 +3,7 @@ import { useUrlState } from '@/hooks/useUrlState';
 import { useAtlasCatalogue } from '@/hooks/useAtlasCatalogue';
 import { DEFAULT_STATE, type AtlasMode } from '@/state/atlas-state';
 import { AppHeader } from './AppHeader';
+import { DiscoverView } from '@/features/discover/DiscoverView';
 import { ExploreView } from '@/features/atlas/ExploreView';
 import { ExplainView } from '@/features/evidence-stories/ExplainView';
 import { BriefingView } from '@/features/briefing/BriefingView';
@@ -47,6 +48,8 @@ export function App() {
               onRetry={catalogue.retry}
             />
           </div>
+        ) : state.mode === 'discover' ? (
+          <DiscoverView catalogue={catalogue.value} state={state} onChange={patch} />
         ) : state.mode === 'explore' ? (
           <ExploreView
             catalogue={catalogue.value}

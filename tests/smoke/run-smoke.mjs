@@ -102,7 +102,56 @@ async function main() {
 
     console.log('\n--- browser smoke tests ---');
 
+    // ------------------------------------------------------------ discovery
     await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.waitForSelector('text=What would you like to understand', { timeout: 45_000 });
+
+    await check('a bare URL opens discovery, driven by real metadata', async () => {
+      const body = await page.textContent('body');
+      assert(/Four ways in/i.test(body ?? ''), 'entry points missing');
+      assert(/Explore a place/i.test(body ?? ''), 'place entry point missing');
+      assert(/Follow an evidence story/i.test(body ?? ''), 'story entry point missing');
+      assert(
+        /Most recently published by the source/i.test(body ?? ''),
+        'recently published section missing',
+      );
+      // The publication date must be distinguished from the preparation date.
+      assert(
+        /not the same thing as the period an observation covers/i.test(body ?? ''),
+        'publication date is not distinguished from observation period',
+      );
+      const topicChips = await page.locator('button:has-text("Respiratory")').count();
+      assert(topicChips > 0, 'topic entry points missing');
+      return 'discovery renders';
+    });
+
+    await check('the coverage statement names the real sources', async () => {
+      const body = await page.textContent('body');
+      assert(/England only/i.test(body ?? ''), 'England-only coverage not stated');
+      assert(
+        /published profiles/i.test(body ?? ''),
+        'the statement does not describe the multi-profile source',
+      );
+      assert(
+        !/respiratory disease \(INHALE\) profile, which publishes England only/i.test(body ?? ''),
+        'stale single-profile coverage statement is still shown',
+      );
+      return 'accurate';
+    });
+
+    await check('a topic entry point opens the workspace on that topic', async () => {
+      await page.locator('button:has-text("Cardiovascular")').first().click();
+      await waitForAtlas(page);
+      await page.waitForFunction(
+        () => /[?&]t=cardiovascular/.test(window.location.search), null, { timeout: 15_000 },
+      );
+      const body = await page.textContent('body');
+      assert(/Cardiovascular/i.test(body ?? ''), 'topic not reflected in the workspace');
+      return 'cardiovascular';
+    });
+
+    // ------------------------------------------------------------ workspace
+    await page.goto(`${BASE}/?v=explore`, { waitUntil: 'networkidle' });
     await waitForAtlas(page);
 
     await check('UK overview renders a UK-only map, with no world basemap', async () => {
@@ -141,6 +190,8 @@ async function main() {
     });
 
     await check('a verified city search resolves transparently', async () => {
+      await page.goto(`${BASE}/?v=explore`, { waitUntil: 'networkidle' });
+      await waitForAtlas(page);
       await page.fill('input[type="search"]', 'Sheffield');
       await page.waitForSelector('[role="option"]', { timeout: 30_000 });
       // The settlement index is fetched lazily on first input, so the settlement
@@ -200,7 +251,7 @@ async function main() {
     });
 
     await check('nation and area drill-down with Back works', async () => {
-      await page.goto(`${BASE}/?a=E06000065&n=England`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/?v=explore&a=E06000065&n=England`, { waitUntil: 'networkidle' });
       await waitForAtlas(page);
       const crumbs = await page.locator('nav[aria-label="Geography breadcrumb"]').textContent();
       assert(/United Kingdom/.test(crumbs ?? ''), 'breadcrumb missing UK');
@@ -213,7 +264,7 @@ async function main() {
     });
 
     await check('a keyboard user can select an area from the linked table', async () => {
-      await page.goto(BASE, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/?v=explore`, { waitUntil: 'networkidle' });
       await waitForAtlas(page);
       await page.locator('button', { hasText: 'Data table' }).first().click();
       await page.waitForSelector('table', { timeout: 15_000 });
@@ -239,7 +290,7 @@ async function main() {
     await page.keyboard.press('Escape');
 
     await check('area comparison uses compatible observations only', async () => {
-      await page.goto(`${BASE}/?a=E06000065&c=E06000064&n=England`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/?v=explore&a=E06000065&c=E06000064&n=England`, { waitUntil: 'networkidle' });
       await waitForAtlas(page);
       const body = await page.textContent('body');
       assert(
@@ -250,9 +301,40 @@ async function main() {
       return 'compared';
     });
 
+    await check('a measure with no combined figure says so and offers the choice', async () => {
+      await page.goto(`${BASE}/?v=explore&i=90366`, { waitUntil: 'networkidle' });
+      await waitForAtlas(page);
+      const body = await page.textContent('body');
+      assert(
+        /no combined figure/i.test(body ?? ''),
+        'life expectancy does not explain the absence of a combined series',
+      );
+      assert(
+        /recorded sex categories, not gender identity/i.test(body ?? ''),
+        'recorded sex is not distinguished from gender identity',
+      );
+      // Both published sexes must be offered.
+      const population = page.locator('#population');
+      assert((await population.count()) > 0, 'no population control shown');
+      return 'population choice required and explained';
+    });
+
+    await check('an indicator unavailable at this geography is disabled, with a reason', async () => {
+      await page.goto(`${BASE}/?v=explore&g=nhs&t=metabolic`, { waitUntil: 'networkidle' });
+      await waitForAtlas(page);
+      await page.locator('#indicator').click();
+      await page.waitForSelector('[role="option"]', { timeout: 15_000 });
+      const disabled = await page.locator('[role="option"][data-disabled]').count();
+      const text = await page.textContent('body');
+      assert(disabled > 0, 'no unavailable indicator is marked disabled');
+      assert(/Not published for/i.test(text ?? ''), 'no reason given for unavailability');
+      await page.keyboard.press('Escape');
+      return `${disabled} disabled with reasons`;
+    });
+
     // ----------------------------------------------------------- downloads
     await check('SVG download works and contains real vector content', async () => {
-      await page.goto(`${BASE}/?a=E06000065&n=England`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/?v=explore&a=E06000065&n=England`, { waitUntil: 'networkidle' });
       await waitForAtlas(page);
       await page.locator('button', { hasText: 'Export map' }).first().click();
       await page.waitForSelector('text=Download SVG (vector)', { timeout: 15_000 });

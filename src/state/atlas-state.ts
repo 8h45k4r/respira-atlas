@@ -1,7 +1,8 @@
 import type { ClassificationMethod } from '@/data/selectors/classification';
 import type { GeographyMode } from '@/geography/model';
 
-export type AtlasMode = 'explore' | 'explain' | 'briefing' | 'methods' | 'coverage';
+export type AtlasMode =
+  | 'discover' | 'explore' | 'explain' | 'briefing' | 'methods' | 'coverage';
 
 /**
  * The complete analytical state. Everything that changes what a reader sees is
@@ -81,7 +82,9 @@ const KEYS = {
   subgroupCategoryType: 'sg',
 } as const;
 
-const MODES: readonly AtlasMode[] = ['explore', 'explain', 'briefing', 'methods', 'coverage'];
+const MODES: readonly AtlasMode[] = [
+  'discover', 'explore', 'explain', 'briefing', 'methods', 'coverage',
+];
 const GEOGRAPHY_MODES: readonly GeographyMode[] = ['administrative', 'nhs'];
 const CLASSIFICATIONS: readonly ClassificationMethod[] = [
   'quantile', 'equal-interval', 'fixed',
@@ -161,7 +164,22 @@ export function deserialiseState(query: string): AtlasState {
   const selected = str(KEYS.selectedAreaCode)?.toUpperCase() ?? null;
 
   return {
-    mode: oneOf(KEYS.mode, MODES, DEFAULT_STATE.mode),
+    /*
+     * A bare URL lands on discovery; a URL that already carries analytical
+     * state opens the workspace directly. Links shared before discovery existed
+     * name an indicator, area or topic, so they keep resolving to the view
+     * their author meant.
+     */
+    mode: oneOf(
+      KEYS.mode,
+      MODES,
+      params.has(KEYS.indicatorId) ||
+        params.has(KEYS.selectedAreaCode) ||
+        params.has(KEYS.topic) ||
+        params.has(KEYS.comparisonAreaCodes)
+        ? 'explore'
+        : 'discover',
+    ),
     topic: str(KEYS.topic),
     geographyMode: oneOf(KEYS.geographyMode, GEOGRAPHY_MODES, DEFAULT_STATE.geographyMode),
     areaTypeKey: str(KEYS.areaTypeKey),

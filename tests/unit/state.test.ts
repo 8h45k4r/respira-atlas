@@ -31,7 +31,19 @@ describe('URL state round trip', () => {
   });
 
   it('round trips the defaults', () => {
-    expect(deserialiseState(serialiseState(DEFAULT_STATE))).toEqual(DEFAULT_STATE);
+    // A bare query carries no analytical state, so it opens on discovery.
+    expect(deserialiseState(serialiseState(DEFAULT_STATE)))
+      .toEqual({ ...DEFAULT_STATE, mode: 'discover' });
+  });
+
+  it('opens discovery for a bare URL but the workspace for an analytical one', () => {
+    expect(deserialiseState('').mode).toBe('discover');
+    expect(deserialiseState('a=E06000065').mode).toBe('explore');
+    expect(deserialiseState('i=93577').mode).toBe('explore');
+    expect(deserialiseState('t=cancer').mode).toBe('explore');
+    // An explicit mode always wins.
+    expect(deserialiseState('v=methods').mode).toBe('methods');
+    expect(deserialiseState('v=explore').mode).toBe('explore');
   });
 
   it('keeps default values out of the query string', () => {
@@ -48,7 +60,10 @@ describe('URL state round trip', () => {
 
 describe('URL state is defensive about bad input', () => {
   it('falls back to defaults on an unknown mode', () => {
-    expect(deserialiseState('v=nonsense').mode).toBe(DEFAULT_STATE.mode);
+    // An unrecognised mode falls back the same way a missing one does: to
+    // discovery when the URL has no analytical state, to the workspace when it does.
+    expect(deserialiseState('v=nonsense').mode).toBe('discover');
+    expect(deserialiseState('v=nonsense&i=93577').mode).toBe('explore');
     expect(deserialiseState('g=moon').geographyMode).toBe(DEFAULT_STATE.geographyMode);
     expect(deserialiseState('cm=rainbow').classification).toBe(DEFAULT_STATE.classification);
   });
@@ -86,7 +101,7 @@ describe('URL state is defensive about bad input', () => {
     expect(deserialiseState('cn=7').classCount).toBe(7);
   });
 
-  it('treats an empty query as the default state', () => {
-    expect(deserialiseState('')).toEqual(DEFAULT_STATE);
+  it('treats an empty query as the default state, on discovery', () => {
+    expect(deserialiseState('')).toEqual({ ...DEFAULT_STATE, mode: 'discover' });
   });
 });
