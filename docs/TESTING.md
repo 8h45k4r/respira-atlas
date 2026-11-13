@@ -23,14 +23,14 @@ SPA fallback Cloudflare serves. Any console error fails the run.
 ### Unit tests
 
 ```
- Test Files  8 passed (8)
-      Tests  106 passed (106)
+ Test Files  9 passed (9)
+      Tests  116 passed (116)
    Duration  1.76s (transform 947ms, setup 0ms, collect 1.72s, tests 490ms, environment 1ms, prepare 619ms)
 ```
 
 ### Browser smoke tests
 
-> Re-run for the visualisation changes (2026-11-13): 28 of 29 passed. The one
+> Re-run after the visual redesign (2026-11-13, latest on `main`): 28 of 29 passed. The one
 > failure was "no console errors during the run", caused by a single 404. The
 > original commit fails in the same way in the same environment, so it predates
 > those changes; it has not yet been traced. The output below is from the

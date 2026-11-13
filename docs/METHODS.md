@@ -49,7 +49,8 @@ producing a number that looks valid.
 ## Interpretation guards
 
 **Recorded prevalence is not disease prevalence.** QOF register indicators
-(COPD and asthma prevalence) are marked `not-interpretable`. For them the
+(COPD, asthma, hypertension and depression prevalence) are marked
+`not-interpretable`. For them the
 application *refuses to repeat* the publisher's better/worse flag, and says why:
 a higher recorded figure may reflect more complete case-finding rather than more
 disease. Lower recorded prevalence is never called better.
@@ -81,8 +82,8 @@ transfer to individuals.
   is always explicit; colours never change meaning silently.
 - **Selection changes the outline only.** Selecting an area never changes what
   the fill legend means.
-- Palettes are single-hue sequential (teal) or teal-to-purple diverging, with
-  **no red/green opposition**. Non-data areas are styled entirely outside the
+- Palettes are single-hue sequential (Oxford blue) or brass-to-Oxford-blue
+  diverging, with **no red/green opposition**. Non-data areas are styled entirely outside the
   value ramp, with patterns as well as colour.
 
 ## The four availability states
@@ -108,11 +109,29 @@ property, so narrowing the state is required before a number can be read.
 - Financial and calendar years are kept distinct and labelled.
 - A change between two periods is described as a difference between two points,
   **never as an established trend**. Where the publisher supplies its own trend
-  assessment over the full series, it is quoted as theirs and identified as such.
+  assessment — which Fingertips bases on the most recent points of the series,
+  tested at 99.8% — it is quoted as theirs and identified as such.
+- **Change is measured against a period that shares no years with this one.**
+  In a rolling 3-year series that is three periods back; neighbouring pooled
+  periods share two of their three years, so their difference is mostly overlap.
+  The written statement and the change tile use the same rule.
 - **Gaps are drawn as gaps.** A period with no published value breaks the line;
   nothing is interpolated across it.
 - A "latest available" mode that mixed periods across areas is not offered,
   because a same-period comparison is the only one the data support here.
+
+## Charts
+
+- **Value axes follow a per-indicator rule** (`src/charts/axis-rules.ts`): a
+  zero baseline for rates, proportions, counts and concentrations; a fitted axis
+  for life expectancy and scores, always marked with a drawn break and "axis
+  starts at X, not zero". A fitted axis never shows less than a minimum span, so
+  noise is not magnified into a cliff.
+- Lines are labelled directly; there are no legends to match up, and no text is
+  rotated.
+- The selected area is brass everywhere; England is charcoal and dashed. Colour
+  order for compared areas is shared by every view.
+- Full rules: [VISUAL-DESIGN.md](VISUAL-DESIGN.md).
 
 ## Comparability gating
 

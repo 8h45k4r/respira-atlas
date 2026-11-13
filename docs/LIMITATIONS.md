@@ -5,9 +5,8 @@ none.
 
 ## Coverage
 
-**England only.** The source (OHID Fingertips INHALE) is an England product.
-There are no respiratory indicators here for Scotland, Wales or Northern
-Ireland. Those nations remain on the map and navigable, drawn as *not covered by
+**England only.** The source (five OHID Fingertips profiles) is an England
+product. There are no indicators here for Scotland, Wales or Northern Ireland. Those nations remain on the map and navigable, drawn as *not covered by
 this dataset*, and no UK-wide benchmark is computed anywhere.
 
 Source adapters for devolved-nation datasets are defined as interfaces with
@@ -17,6 +16,30 @@ Ireland) would require verifying each source's own indicator definitions,
 geographies, periods and comparability before anything could be shown
 alongside the England figures — and in most cases the definitions differ enough
 that a direct comparison would not be valid even once the data were in hand.
+
+## Data currency
+
+The committed dataset was prepared on **18 October 2026**. Known changes since,
+or coming (details and sources in `reports/Atlas tools methods and data risks.md`):
+
+- **ICBs were reorganised on 1 April 2026.** NHS England abolished 12 ICBs and
+  created 6, leaving 36. The ICB layer here is the July 2022 vintage (42 ICBs),
+  which matches the codes Fingertips published when the data were prepared, so
+  the figures are joined correctly — but some organisations on the map no longer
+  exist. Further boundary changes are reported for April 2027.
+- **Newer figures exist.** OHID published a public health data update on
+  3 November 2026, and ONS revised mid-2022 to mid-2024 population estimates in
+  2026, which can revise published rates. Re-run `npm run data:prepare` to
+  refresh.
+- **Fingertips is being replaced.** Its successor, *Find public health data*, is
+  in beta and expected on GOV.UK in 2027 with a new API. The preparation script
+  uses the current Fingertips API and will need a new adapter when that is
+  retired.
+- **Local government reorganisation.** Surrey becomes two unitary councils on
+  1 April 2027, so the upper-tier count will change from 153.
+- **The flag's interval level is inferred, not published.** The atlas reads the
+  95% / 99.8% level behind the England flag from the data. If a refresh ever
+  breaks that exact agreement, figures fall back to 95% intervals and say so.
 
 ## Geography
 
@@ -40,8 +63,8 @@ that a direct comparison would not be valid even once the data were in hand.
   than a small verified one.
 - Topic depth is uneven and follows the data rather than ambition. Respiratory
   has 12 indicators; cancer, metabolic health, alcohol and environment have one
-  or two each. A topic chip shows its count so the thinness is visible before
-  you click it.
+  or two each. The Start page draws indicators per topic as a bar chart, so
+  the thinness is visible before you click.
 - **Fuel poverty (93759) is excluded** — declared available by the source's own
   index at eight geographies, returns no rows at any. Recorded as a source
   discrepancy in the Coverage view.
@@ -105,7 +128,9 @@ users or devices and are not sent anywhere. Sharing a view means sharing the URL
 
 Built to WCAG 2.2 AA and tested for keyboard operation, focus visibility,
 non-colour selection cues, screen-reader announcements, text alternatives for
-every figure and reduced-motion support. It has **not** been through a formal
+every figure and reduced-motion support. Animated numbers always carry their
+final value as text, and prose hidden behind "Read the explanation" or "Why?" is
+visually hidden, not removed, so screen readers still read it. It has **not** been through a formal
 third-party audit or tested with every assistive technology. If you find a
 barrier, it is a defect.
 

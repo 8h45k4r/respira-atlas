@@ -48,6 +48,22 @@ time. See [DATA.md](DATA.md) for how to refresh it.
 
 Every push to `main` triggers a build and deploy.
 
+### If a build fails in under a second
+
+A build that fails almost instantly has not reached `npm run build`; the code is
+not the cause. In November 2026 the preview and production builds failed this
+way while the same commit built cleanly from a fresh clone and passed
+`npx wrangler deploy --dry-run`. Check, in order:
+
+1. **The build log**, under Workers & Pages → respira-atlas → Builds.
+2. **Settings → Build → API token.** Workers Builds deploys with a stored token;
+   if it was deleted, rolled or expired, every build fails immediately. Create a
+   new one there and retry the build.
+3. **Build settings** match the table above (build command, deploy command,
+   root directory).
+
+Until a build succeeds, the live site keeps serving the last good deployment.
+
 ## Deploying from a local machine
 
 ```bash
