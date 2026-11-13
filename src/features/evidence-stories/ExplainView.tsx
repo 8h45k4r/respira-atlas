@@ -1,5 +1,16 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ArrowRight, Share2, Check } from 'lucide-react';
+import {
+  ArrowRight, Share2, Check, Eye, Scale, MoveHorizontal, Unlink, Search, Sigma, TrendingUp,
+  Ruler, XCircle, FileText, ChevronDown, Database,
+} from 'lucide-react';
+import { Reveal, CountUp } from '@/components/motion/motion';
+import { FlowSteps, IconCards } from '@/components/infographics/infographics';
+import { DifferenceTile, ChangeTile } from '@/features/atlas/AreaSnapshot';
+import { IntervalVsEngland } from '@/features/atlas/IntervalVsEngland';
+import { rankByValue, rankWindow } from '@/data/selectors/ranking';
+import { seriesFor } from '@/data/loader';
+import { displayDecimals, formatValue, unitLabel } from '@/data/selectors/format';
+import { cn } from '@/lib/utils';
 import type { Catalogue } from '@/hooks/useAtlasCatalogue';
 import type { AtlasState } from '@/state/atlas-state';
 import { stateToUrl } from '@/state/atlas-state';
@@ -12,11 +23,12 @@ import { AreaSearch } from '@/components/common/AreaSearch';
 import { InlineSvgChart } from '@/charts/InlineSvgChart';
 import { renderMapSvg } from '@/export/map-svg';
 import { renderDotWhiskerSvg, renderTimeSeriesSvg } from '@/export/chart-svg';
+import { buildTrendLines } from '@/charts/trend-lines';
 import { LoadingState, ErrorState, EmptyState, UnsupportedState } from '@/components/common/states';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/misc';
 import { isPresent } from '@/data/schemas/observation';
-import { CHART_INK, SELECTION } from '@/charts/palette';
+import { SELECTION } from '@/charts/palette';
 import { AreaTable } from '@/components/common/AreaTable';
 
 /**
@@ -82,6 +94,7 @@ function ExplainBody({
   const analysis = useAnalysis({ catalogue, state, selection, registry, observations });
   const selectedArea = state.selectedAreaCode ? registry.get(state.selectedAreaCode) : undefined;
   const { indicator } = selection;
+  const [statementOpen, setStatementOpen] = useState(false);
 
   const share = useCallback(async () => {
     try {
@@ -109,24 +122,36 @@ function ExplainBody({
   // Computed unconditionally: hooks must not sit behind the early return below.
   const peers = useMemo(() => {
     if (!selectedArea) return [];
-    const present = analysis.observationsForPeriod.filter(isPresent);
-    const sorted = [...present].sort((a, b) => b.value - a.value);
-    const index = sorted.findIndex((o) => o.areaCode === selectedArea.code);
-    if (index < 0) return sorted.slice(0, 7);
-    const start = Math.max(0, Math.min(index - 3, sorted.length - 7));
-    return sorted.slice(start, start + 7);
+    const ranked = rankByValue(analysis.observationsForPeriod);
+    const window = rankWindow(ranked, selectedArea.code, 3) ?? ranked.slice(0, 7);
+    return window.map((entry) => ({ observation: entry.observation, rank: entry.rank, total: ranked.length }));
   }, [analysis.observationsForPeriod, selectedArea]);
+  const flagLevel = observations.flagLevel;
+  const intervalLevel = flagLevel.basis === 'exact' && flagLevel.level ? flagLevel.level : 95;
 
   if (!selectedArea) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-10">
-        <h2 className="text-lg font-semibold text-oxford-900">Choose a place to explain</h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          This workspace turns one selection into a statement you can defend: what was
-          observed, how it compares with England, what uncertainty remains, and what you
-          would need to know before recommending anything. Pick a place to begin.
-        </p>
-        <div className="mt-5 max-w-md">
+      <div className="mx-auto w-full max-w-4xl px-4 py-10">
+        <Reveal as="header">
+          <p className="label-caps">Explain a finding</p>
+          <h2 className="mt-1 text-2xl font-semibold tracking-[-0.015em] text-oxford-900">
+            Turn one place into a statement you can defend
+          </h2>
+        </Reveal>
+        <div className="mt-6">
+          <FlowSteps
+            nodes={[
+              { icon: Eye, label: 'Observed', content: <p className="text-xs text-slate-600">The value, with its interval</p> },
+              { icon: Scale, label: 'Compared', content: <p className="text-xs text-slate-600">Against England, size and evidence apart</p> },
+              { icon: MoveHorizontal, label: 'Uncertain', content: <p className="text-xs text-slate-600">What the interval allows</p> },
+              { icon: Unlink, label: 'Limits', content: <p className="text-xs text-slate-600">What it cannot tell you</p> },
+            ]}
+          />
+        </div>
+        <Reveal delay={500} className="mt-8 max-w-md rounded-xl border border-brass-300 bg-brass-50/60 p-4">
+          <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-oxford-900">
+            <Search className="h-4 w-4 text-brass-600" aria-hidden />Pick a place to begin
+          </p>
           <AreaSearch
             entries={catalogue.search.entries}
             mode={state.geographyMode}
@@ -138,11 +163,11 @@ function ExplainBody({
               })
             }
           />
-        </div>
-        <Button variant="link" className="mt-4 px-0" onClick={() => onChange({ mode: 'explore' })}>
-          Or explore the map first
-          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-        </Button>
+          <Button variant="link" className="mt-2 px-0" onClick={() => onChange({ mode: 'explore' })}>
+            Or explore the map first
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </Button>
+        </Reveal>
       </div>
     );
   }
@@ -150,17 +175,25 @@ function ExplainBody({
   const evidence = analysis.evidence;
   const comparison = evidence?.comparisonDetail ?? null;
 
+  const observed = analysis.selectedObservation;
+  const benchmark = analysis.benchmarkObservation;
+  const periodIndex = analysis.periodSeries.periods.indexOf(analysis.period);
+  const step = analysis.periodSeries.pooled ? analysis.periodSeries.years : 1;
+  const previousPeriod = periodIndex - step >= 0 ? analysis.periodSeries.periods[periodIndex - step] : null;
+  const areaSeries = seriesFor(observations, selectedArea.code, analysis.sex);
+  const flag = isPresent(observed) ? observed.significance : 'not-compared';
+
   return (
-    <div className="mx-auto w-full max-w-[82rem] px-4 py-4">
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+    <div className="shell py-4">
+      <Reveal as="header" className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="label-caps">Evidence statement</p>
-          <h2 className="mt-1 text-xl font-semibold leading-tight tracking-[-0.015em] text-oxford-900">
+          <h2 className="mt-1 text-2xl font-semibold leading-tight tracking-[-0.015em] text-oxford-900">
             {evidence?.unavailable
               ? `${indicator.shortName} in ${selectedArea.name}: no value available`
               : `${indicator.shortName} in ${selectedArea.name}, ${analysis.period}`}
           </h2>
-          <p className="mt-1 text-xs text-slate-600">
+          <p className="mt-1 font-figure text-2xs text-slate-500">
             {selectedArea.areaTypeLabel} · {selectedArea.nation} · {selectedArea.code}
           </p>
         </div>
@@ -175,10 +208,61 @@ function ExplainBody({
             <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </Button>
         </div>
-      </div>
+      </Reveal>
+
+      {/* The finding at a glance, in reading order. */}
+      {isPresent(observed) ? (
+        <section aria-label="The finding at a glance" className="mb-5">
+          <FlowSteps
+            nodes={[
+              {
+                icon: Eye,
+                label: 'Observed',
+                content: (
+                  <div>
+                    <CountUp
+                      value={observed.value}
+                      decimals={displayDecimals(observed.value, indicator)}
+                      className="block text-3xl font-semibold leading-none text-oxford-900"
+                    />
+                    <p className="mt-1 font-figure text-2xs text-slate-500">{unitLabel(indicator)} · {analysis.period}</p>
+                  </div>
+                ),
+              },
+              {
+                icon: Scale,
+                label: 'vs England',
+                content: comparison ? (
+                  <DifferenceTile comparison={comparison} indicator={indicator} />
+                ) : <p className="text-xs text-slate-500">No England value for this period</p>,
+              },
+              {
+                icon: Sigma,
+                label: 'Evidence',
+                content: isPresent(benchmark) ? (
+                  <IntervalVsEngland observation={observed} england={benchmark} indicator={indicator} flagLevel={flagLevel} />
+                ) : <p className="text-xs text-slate-500">Not compared</p>,
+              },
+              {
+                icon: TrendingUp,
+                label: 'Over time',
+                content: (
+                  <ChangeTile
+                    current={observed}
+                    previous={previousPeriod ? areaSeries.get(previousPeriod) : undefined}
+                    previousPeriod={previousPeriod}
+                    indicator={indicator}
+                  />
+                ),
+              },
+            ]}
+          />
+        </section>
+      ) : null}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-3">
+          <Reveal>
           <FigureFrame
             question={analysis.question}
             indicatorName={indicator.name}
@@ -191,16 +275,13 @@ function ExplainBody({
               source: indicator.dataSource ?? 'Not stated',
             }}
             coverageLabel={`${indicator.coverage.nations.join(', ')} coverage`}
+            caveats={[
+              { kind: 'coverage', label: `${indicator.coverage.nations.join(' and ')} only` },
+              { kind: 'not-causal', label: 'Pattern, not cause' },
+            ]}
             limitation={
               analysis.viewModel.coverageNote ??
               'Area-level differences are descriptive. They do not identify a cause.'
-            }
-            evidence={
-              evidence ? (
-                <>
-                  <strong>{selectedArea.name} is outlined.</strong> {evidence.observed}
-                </>
-              ) : null
             }
             table={
               <AreaTable
@@ -220,11 +301,14 @@ function ExplainBody({
                 minWidth={320}
               />
             </div>
+            {evidence ? <p className="sr-only">{selectedArea.name} is outlined. {evidence.observed}</p> : null}
           </FigureFrame>
+          </Reveal>
 
           {peers.length > 1 ? (
+            <Reveal>
             <FigureFrame
-              question={`How does ${selectedArea.name} sit among comparable areas, and do the intervals overlap?`}
+              question={`Where does ${selectedArea.name} sit among its nearest neighbours in value?`}
               indicatorName={indicator.name}
               meta={{
                 population: analysis.notes.population,
@@ -233,34 +317,41 @@ function ExplainBody({
                 unit: indicator.unit ?? 'not stated',
                 source: indicator.dataSource ?? 'Not stated',
               }}
-              limitation="Neighbouring areas in this ordering are usually not distinguishable from one another once their confidence intervals are taken into account. This is a position in a distribution, not a league table."
+              caveats={[
+                { kind: 'interval', label: `Bars = ${intervalLevel}%${flagLevel.basis === 'exact' ? ', as the flag' : ''}` },
+                { kind: 'rank', label: 'Position, not a league table' },
+              ]}
+              limitation="Neighbouring areas in this ordering are usually not distinguishable from one another once their confidence intervals are taken into account. This is a position in a distribution, not a league table. Solid dots are areas the publisher flags as different from England; hollow dots are flagged similar."
             >
               <InlineSvgChart
                 render={(width) =>
                   renderDotWhiskerSvg({
-                    rows: peers.map((observation) => ({
+                    rows: peers.map(({ observation, rank }) => ({
                       areaCode: observation.areaCode,
                       areaName: registry.get(observation.areaCode)?.name ?? observation.areaCode,
                       observation,
                       isSelected: observation.areaCode === selectedArea.code,
                       selectionIndex: observation.areaCode === selectedArea.code ? 0 : null,
+                      rank,
                     })),
                     indicator,
-                    benchmark: isPresent(analysis.benchmarkObservation)
-                      ? analysis.benchmarkObservation
-                      : null,
+                    benchmark: isPresent(benchmark) ? benchmark : null,
                     benchmarkLabel: 'England',
                     title: '', subtitle: '', notes: null,
                     width, standalone: false,
+                    encodeSignificance: true, intervalLevel,
+                    rankTotal: peers[0]?.total ?? null,
                   })
                 }
-                ariaLabel={`${selectedArea.name} compared with nearby areas in the distribution`}
+                ariaLabel={`${selectedArea.name} compared with its nearest neighbours in value`}
                 className="[&_svg]:h-auto [&_svg]:w-full"
               />
             </FigureFrame>
+            </Reveal>
           ) : null}
 
           {analysis.periodSeries.periods.length >= 2 ? (
+            <Reveal>
             <FigureFrame
               question={`How has this changed in ${selectedArea.name}?`}
               indicatorName={indicator.name}
@@ -271,6 +362,12 @@ function ExplainBody({
                 unit: indicator.unit ?? 'not stated',
                 source: indicator.dataSource ?? 'Not stated',
               }}
+              caveats={[
+                ...(analysis.periodSeries.pooled
+                  ? [{ kind: 'pooled' as const, label: `${analysis.periodSeries.years}-year periods overlap` }]
+                  : []),
+                { kind: 'gaps', label: 'Gap = no value, not zero' },
+              ]}
               limitation={
                 analysis.periodSeries.pooled
                   ? `Rolling ${analysis.periodSeries.years}-year pooled periods overlap, so consecutive points are not independent.`
@@ -280,41 +377,16 @@ function ExplainBody({
               <InlineSvgChart
                 render={(width) =>
                   renderTimeSeriesSvg({
-                    series: [
-                      {
-                        label: selectedArea.name,
-                        colour: SELECTION.stroke,
-                        points: analysis.periodSeries.periods.map((period) => ({
-                          period,
-                          observation:
-                            observations.byArea.get(selectedArea.code)?.get(period) ??
-                            ({
-                              areaCode: selectedArea.code, period,
-                              sex: observations.sex, age: observations.age,
-                              categoryType: null, category: null, state: 'missing' as const,
-                              significance: 'not-compared' as const,
-                              trend: 'not-available' as const, note: null,
-                            }),
-                        })),
-                      },
-                      {
-                        label: 'England',
-                        colour: CHART_INK.benchmark,
-                        dashed: true,
-                        points: analysis.periodSeries.periods.map((period) => ({
-                          period,
-                          observation:
-                            observations.benchmarkByPeriod.get(period) ??
-                            ({
-                              areaCode: 'E92000001', period,
-                              sex: observations.sex, age: observations.age,
-                              categoryType: null, category: null, state: 'missing' as const,
-                              significance: 'not-compared' as const,
-                              trend: 'not-available' as const, note: null,
-                            }),
-                        })),
-                      },
-                    ],
+                    series: buildTrendLines({
+                      observations,
+                      sex: analysis.sex,
+                      periods: analysis.periodSeries.periods,
+                      areas: [{
+                        code: selectedArea.code, label: selectedArea.name,
+                        colour: SELECTION.stroke, showInterval: true,
+                      }],
+                      benchmark: { label: 'England', areaCode: 'E92000001', showInterval: true },
+                    }),
                     periods: analysis.periodSeries.periods,
                     indicator, title: '', subtitle: '', notes: null,
                     showIntervals: true, pooledYears: analysis.periodSeries.years,
@@ -325,6 +397,7 @@ function ExplainBody({
                 className="[&_svg]:h-auto [&_svg]:w-full"
               />
             </FigureFrame>
+            </Reveal>
           ) : (
             <UnsupportedState
               title="No time series for this selection"
@@ -334,39 +407,89 @@ function ExplainBody({
         </div>
 
         <aside className="space-y-3">
-          <div className="panel p-4">
-            <h3 className="text-sm font-semibold text-oxford-900">Interpretation</h3>
-            <div className="mt-3">
-              {evidence ? <EvidencePanel statement={evidence} /> : null}
-            </div>
-          </div>
-
           {comparison ? (
-            <div className="panel p-4">
-              <h3 className="text-sm font-semibold text-oxford-900">
-                Magnitude and evidence are different things
-              </h3>
-              <p className="mt-2 text-xs leading-relaxed text-slate-700">
-                The <strong>size</strong> of the difference from England is{' '}
-                {Math.abs(comparison.absoluteDifference).toFixed(2)} {indicator.unit}.
-                Whether there is <strong>evidence</strong> for a real difference is a
-                separate question, answered by the publisher&rsquo;s significance flag
-                {comparison.sourceSignificance === 'not-compared'
-                  ? ', which is not supplied for this observation.'
-                  : `, which records "${comparison.sourceSignificance}".`}
-                {' '}A large difference with a wide interval and a small difference with a
-                narrow interval are not the same finding.
+            <Reveal className="panel p-4">
+              <h3 className="text-sm font-semibold text-oxford-900">Two separate questions</h3>
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5">
+                  <p className="flex items-center gap-1 label-caps text-[0.6rem]"><Ruler className="h-3 w-3" aria-hidden />How big?</p>
+                  <p className="mt-1 text-lg font-semibold tabular-nums text-oxford-900">
+                    {formatValue(Math.abs(comparison.absoluteDifference), indicator)}
+                  </p>
+                  <p className="font-figure text-2xs text-slate-500">{unitLabel(indicator)} {comparison.direction === 'equal' ? 'apart' : comparison.direction}</p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5">
+                  <p className="flex items-center gap-1 label-caps text-[0.6rem]"><Sigma className="h-3 w-3" aria-hidden />Real?</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-oxford-900">
+                    <FlagDot flag={flag} />
+                    {flag === 'not-compared' ? 'Not compared' : flag === 'similar' ? 'Similar' : 'Different'}
+                  </p>
+                  <p className="font-figure text-2xs text-slate-500">publisher’s flag{flagLevel.basis === 'exact' && flagLevel.level ? `, ${flagLevel.level}%` : ''}</p>
+                </div>
+              </div>
+              <p className="sr-only">
+                The size of the difference from England and the evidence for a real difference
+                are separate questions. A large difference with a wide interval and a small
+                difference with a narrow interval are not the same finding.
               </p>
-            </div>
+            </Reveal>
           ) : null}
 
-          <div className="panel p-4">
-            <h3 className="text-sm font-semibold text-oxford-900">Evidence provenance</h3>
-            <div className="mt-2.5">
-              {evidence ? <ProvenanceList statement={evidence} /> : null}
+          <Reveal className="panel border-amber-200 bg-amber-50/40 p-4" delay={80}>
+            <h3 className="mb-2.5 flex items-center gap-1.5 text-sm font-semibold text-amber-950">
+              <Unlink className="h-4 w-4 text-amber-700" aria-hidden />What this cannot tell you
+            </h3>
+            <IconCards
+              tone="amber"
+              columns={1}
+              icon={XCircle}
+              items={[
+                'Why the figure differs. A descriptive rate carries no information about cause.',
+                'Whether an intervention would change it. That needs evidence of effect, not evidence of variation.',
+                'Anything about an individual. This is an area-level measure.',
+                'Whether the service is performing well or badly. Need, access, case-finding and coding all move these numbers.',
+              ]}
+            />
+          </Reveal>
+
+          <Reveal className="panel p-4" delay={120}>
+            <button
+              type="button"
+              aria-expanded={statementOpen}
+              onClick={() => setStatementOpen((open) => !open)}
+              className="flex w-full items-center gap-1.5 rounded text-sm font-semibold text-oxford-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700"
+            >
+              <FileText className="h-4 w-4 text-brass-600" aria-hidden />
+              Full written statement
+              <ChevronDown className={cn('ml-auto h-4 w-4 transition-transform', statementOpen && 'rotate-180')} aria-hidden />
+            </button>
+            <div className={statementOpen ? 'mt-3' : 'sr-only'}>
+              {evidence ? <EvidencePanel statement={evidence} /> : null}
             </div>
+          </Reveal>
+
+          <Reveal className="panel p-4" delay={160}>
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-oxford-900">
+              <Database className="h-4 w-4 text-oxford-500" aria-hidden />Provenance
+            </h3>
+            {evidence ? (
+              <div className="mt-2 flex flex-wrap gap-1.5 font-figure text-2xs">
+                {[
+                  `ID ${evidence.provenance.indicatorId}`,
+                  evidence.provenance.source,
+                  evidence.provenance.licence,
+                  `Retrieved ${evidence.provenance.retrievedAt.slice(0, 10)}`,
+                ].map((chip) => (
+                  <span key={chip} title={chip} className="max-w-full truncate rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-slate-700">{chip}</span>
+                ))}
+              </div>
+            ) : null}
+            <details className="mt-2.5">
+              <summary className="cursor-pointer text-xs font-medium text-brass-700">All provenance fields</summary>
+              <div className="mt-2">{evidence ? <ProvenanceList statement={evidence} /> : null}</div>
+            </details>
             {indicator.definition ? (
-              <details className="mt-3">
+              <details className="mt-2">
                 <summary className="cursor-pointer text-xs font-medium text-brass-700">
                   Indicator definition
                 </summary>
@@ -385,32 +508,24 @@ function ExplainBody({
                 </p>
               </details>
             ) : null}
-          </div>
-
-          <div className="panel border-amber-200 bg-amber-50/50 p-4">
-            <h3 className="text-sm font-semibold text-amber-950">
-              What this cannot tell you
-            </h3>
-            <ul className="mt-2 list-outside list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-amber-950">
-              <li>
-                Why the figure differs. A descriptive rate carries no information about
-                cause.
-              </li>
-              <li>
-                Whether an intervention would change it. That needs evidence of effect,
-                not evidence of variation.
-              </li>
-              <li>
-                Anything about an individual in this area. This is an area-level measure.
-              </li>
-              <li>
-                Whether the service is performing well or badly. Need, access,
-                case-finding and coding all move these numbers.
-              </li>
-            </ul>
-          </div>
+          </Reveal>
         </aside>
       </div>
     </div>
+  );
+}
+
+function FlagDot({ flag }: { flag: string }) {
+  if (flag === 'not-compared') {
+    return <span aria-hidden className="inline-block h-3 w-0.5 bg-oxford-800" />;
+  }
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'inline-block h-3 w-3 rounded-full border-2 border-oxford-800',
+        flag === 'similar' ? 'bg-white' : 'bg-oxford-800',
+      )}
+    />
   );
 }

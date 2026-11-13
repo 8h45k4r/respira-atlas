@@ -137,7 +137,7 @@ The prepared dataset is committed, so the app runs offline with no API access.
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` | Production build to `dist/` |
-| `npm test` | 94 unit tests |
+| `npm test` | 116 unit tests |
 | `npm run smoke` | 29 browser tests against the production build |
 | `npm run data:validate` | Checks the committed dataset for violations |
 | `npm run data:prepare` | Re-fetches everything from source (~3 minutes) |
@@ -146,9 +146,11 @@ The prepared dataset is committed, so the app runs offline with no API access.
 
 All of the following were run and passed on the committed tree:
 
-- **94 unit tests** — classification and breakpoints, benchmark comparison,
+- **116 unit tests** — classification and breakpoints, benchmark comparison,
   comparability gating, the missing/suppressed/zero distinction, evidence-statement
-  eligibility, URL round trips, columnar decode integrity, and SVG export content.
+  eligibility, URL round trips, columnar decode integrity, SVG export content,
+  per-indicator axis rules, ranking, chart layout (no rotated text, direct
+  labels, drawn axis breaks) and sex-separated trend lines.
 - **29 browser tests** — discovery driven by real metadata, evidence stories computing consistent figures from the data and exporting genuine vector, an accurate
   multi-profile coverage statement, topic entry points, UK-only map, all four
   nations present, out-of-coverage nations visibly unsupported, city search
@@ -198,6 +200,8 @@ key is inserted. Exported figures come from this application's own SVG renderer.
 - [Implementation plan and verified assumptions](docs/IMPLEMENTATION-PLAN.md) — what was checked against live sources before any code was written
 - [Data sources and preparation](docs/DATA.md)
 - [Methods and statistical rules](docs/METHODS.md)
+- [Visual design specification](docs/VISUAL-DESIGN.md) — colour roles, type, axis and uncertainty rules every chart follows
+- [Visualisation review](docs/VISUALISATION-REVIEW.md) — prioritised issues, what was fixed, what is next
 - [Evidence stories](docs/STORIES.md)
 - [Known limitations and unsupported coverage](docs/LIMITATIONS.md)
 - [Licensing and attribution](docs/LICENSING.md)

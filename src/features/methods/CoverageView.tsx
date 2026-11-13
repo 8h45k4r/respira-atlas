@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import type { Catalogue } from '@/hooks/useAtlasCatalogue';
 import type { AtlasState } from '@/state/atlas-state';
 import type { CoverageStatus } from '@/data/schemas/manifest';
-import { Badge, Label } from '@/components/ui/misc';
+import { Badge } from '@/components/ui/misc';
+import { Info, Filter } from 'lucide-react';
+import { Reveal } from '@/components/motion/motion';
+import { StatCallouts } from '@/components/infographics/infographics';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 
 const STATUS_STYLE: Record<CoverageStatus, { label: string; cell: string; symbol: string }> = {
   data: { label: 'Data available', cell: 'bg-brass-600 text-white', symbol: '●' },
@@ -31,7 +32,10 @@ export function CoverageView({
   onChange: (patch: Partial<AtlasState>) => void;
 }) {
   const { coverage, manifest, indicators } = catalogue;
-  const [nation, setNation] = useState<string>('all');
+  const covered = manifest.coverage.nationsWithData;
+  // Default to the covered nation: other nations are boundary-only for every
+  // indicator, which the nation tiles above the table already show at a glance.
+  const [nation, setNation] = useState<string>(covered[0] ?? 'all');
 
   const nations = useMemo(
     () => [...new Set(coverage.matrix.map((row) => row.nation))],
@@ -58,38 +62,97 @@ export function CoverageView({
 
   const shownNations = nation === 'all' ? nations : [nation];
 
+  // Per nation: how many indicator × geography cells carry data.
+  const nationSummary = nations.map((item) => {
+    const cells = coverage.matrix.filter((row) => row.nation === item);
+    const withData = cells.filter((row) => row.status === 'data').length;
+    return { nation: item, withData, total: cells.length };
+  });
+  const dataCells = coverage.matrix.filter((row) => row.status === 'data');
+  const indicatorsWithData = new Set(dataCells.map((row) => row.indicatorId)).size;
+  const topicOrder = Object.keys(manifest.topics);
+  const grouped = topicOrder
+    .map((topic) => ({
+      topic,
+      label: manifest.topics[topic]?.label ?? topic,
+      items: indicators.filter((indicator) => indicator.topic === topic),
+    }))
+    .filter((group) => group.items.length > 0);
+
   return (
-    <div className="mx-auto w-full max-w-[100rem] px-4 py-5">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-        <div className="max-w-3xl">
-          <p className="label-caps">Coverage</p>
-          <h2 className="mt-1 text-lg font-semibold leading-tight text-oxford-900">
-            What is published, where, and for which periods
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-700">
-            {manifest.coverage.statement}
-          </p>
-        </div>
-        <div className="w-full max-w-[14rem]">
-          <Label htmlFor="coverage-nation">Nation</Label>
-          <Select value={nation} onValueChange={setNation}>
-            <SelectTrigger id="coverage-nation" className="mt-1"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All UK nations</SelectItem>
-              {nations.map((item) => (
-                <SelectItem key={item} value={item}>{item}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="shell py-6">
+      <Reveal as="header" className="max-w-3xl">
+        <p className="label-caps">Coverage</p>
+        <h2 className="mt-1 text-2xl font-semibold leading-tight tracking-[-0.015em] text-oxford-900">
+          What is published, where, and for which periods
+        </h2>
+        <p className="sr-only">{manifest.coverage.statement}</p>
+      </Reveal>
+
+      <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+        <StatCallouts
+          items={[
+            { value: indicatorsWithData, label: 'indicators with published data', emphasis: true },
+            { value: dataCells.length, label: 'indicator × geography combinations with data' },
+            { value: manifest.excludedIndicators.length, label: 'candidates excluded, with reasons' },
+          ]}
+        />
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Coverage by nation">
+          {nationSummary.map((item, index) => {
+            const has = item.withData > 0;
+            return (
+              <Reveal as="li" key={item.nation} delay={index * 80}>
+                <button
+                  type="button"
+                  aria-pressed={nation === item.nation}
+                  onClick={() => setNation(item.nation)}
+                  className={cn(
+                    'flex h-full w-full flex-col rounded-xl border p-3 text-left transition',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700',
+                    nation === item.nation ? 'border-brass-500 shadow-md' : 'border-slate-200 hover:border-oxford-300',
+                    has ? 'bg-gradient-to-br from-oxford-700 to-oxford-900 text-white'
+                      : 'bg-[repeating-linear-gradient(45deg,#ece9e4_0_1px,#ffffff_1px_6px)] text-slate-700',
+                  )}
+                >
+                  <span className="text-sm font-semibold">{item.nation}</span>
+                  <span className={cn('mt-auto pt-3 text-2xl font-semibold tabular-nums leading-none', has ? 'text-white' : 'text-slate-400')}>
+                    {item.withData}
+                  </span>
+                  <span className={cn('font-figure text-[0.65rem]', has ? 'text-oxford-100' : 'text-slate-500')}>
+                    {has ? 'combinations with data' : 'boundary only, no data'}
+                  </span>
+                </button>
+              </Reveal>
+            );
+          })}
+        </ul>
       </div>
 
-      <ul className="mb-4 flex flex-wrap gap-x-5 gap-y-1.5">
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        <span className="label-caps mr-1">Showing</span>
+        {['all', ...nations].map((item) => (
+          <button
+            key={item}
+            type="button"
+            aria-pressed={nation === item}
+            onClick={() => setNation(item)}
+            className={cn(
+              'rounded-full border px-2.5 py-0.5 font-figure text-2xs transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700',
+              nation === item ? 'border-oxford-900 bg-oxford-900 text-white' : 'border-slate-300 bg-white text-slate-700 hover:border-oxford-500',
+            )}
+          >
+            {item === 'all' ? 'All UK nations' : item}
+          </button>
+        ))}
+      </div>
+
+      <ul className="my-3 flex flex-wrap gap-1.5">
         {(Object.keys(STATUS_STYLE) as CoverageStatus[]).map((status) => (
-          <li key={status} className="flex items-center gap-1.5 font-figure text-2xs text-slate-700">
+          <li key={status} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-0.5 font-figure text-2xs text-slate-700">
             <span
               aria-hidden
-              className={`inline-flex h-4 w-4 items-center justify-center text-[10px] ${STATUS_STYLE[status].cell}`}
+              className={`inline-flex h-4 w-4 items-center justify-center rounded text-[10px] ${STATUS_STYLE[status].cell}`}
             >
               {STATUS_STYLE[status].symbol}
             </span>
@@ -123,11 +186,19 @@ export function CoverageView({
               )}
             </tr>
           </thead>
-          <tbody>
-            {indicators.map((indicator) => {
+          {grouped.map((group) => (
+          <tbody key={group.topic}>
+            <tr className="bg-slate-50/80">
+              <th scope="rowgroup" colSpan={1 + shownNations.length * areaTypeKeys.length}
+                className="sticky left-0 px-2 pb-1 pt-3 text-left font-semibold uppercase tracking-[0.05em] text-oxford-700">
+                {group.label}
+                <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-500">{group.items.length}</span>
+              </th>
+            </tr>
+            {group.items.map((indicator) => {
               const cells = rows.byIndicator.get(indicator.id);
               return (
-                <tr key={indicator.id} className="border-b border-slate-100">
+                <tr key={indicator.id} className="border-b border-slate-100 transition-colors hover:bg-oxford-50/50">
                   <th
                     scope="row"
                     className="sticky left-0 z-10 bg-white px-2 py-1.5 font-normal text-oxford-900"
@@ -162,7 +233,7 @@ export function CoverageView({
                       return (
                         <td key={`${item}-${key}`} className="px-1 py-1 text-center">
                           <span
-                            className={`inline-flex min-w-[3.2rem] items-center justify-center px-1 py-0.5 ${style.cell}`}
+                            className={`inline-flex min-w-[3.2rem] items-center justify-center rounded px-1 py-0.5 ${style.cell}`}
                             title={`${coverage.legend[status] ?? style.label}${
                               periods.length > 0
                                 ? ` — ${periods.length} periods, latest ${periods[periods.length - 1]}`
@@ -179,25 +250,26 @@ export function CoverageView({
               );
             })}
           </tbody>
+          ))}
         </table>
       </div>
-      <p className="mt-2 font-figure text-2xs text-slate-500">
-        A number in a cell is the count of published periods. Hover or focus a cell for the
-        latest period.
+      <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 font-figure text-2xs text-slate-600">
+        <Info className="h-3 w-3" aria-hidden />Number = published periods · hover a cell for the latest
       </p>
 
       {manifest.excludedIndicators.length > 0 ? (
-        <section className="mt-6">
-          <h3 className="text-sm font-semibold text-oxford-900">
+        <section className="mt-8">
+          <h3 className="flex items-center gap-1.5 text-base font-semibold text-oxford-900">
+            <Filter className="h-4 w-4 text-brass-600" aria-hidden />
             Candidate indicators excluded from this release
           </h3>
-          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-700">
+          <p className="sr-only">
             These were resolved from the source catalogue but are not published here. The
             reason is recorded at data-preparation time rather than assumed.
           </p>
-          <ul className="mt-2 space-y-2">
-            {manifest.excludedIndicators.map((excluded) => (
-              <li key={excluded.id} className="border border-slate-200 bg-slate-50/60 p-2.5">
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {manifest.excludedIndicators.map((excluded, index) => (
+              <Reveal as="li" key={excluded.id} delay={index * 70} className="rounded-xl border border-slate-200 bg-white p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-figure text-xs font-semibold text-oxford-900">
                     Indicator {excluded.id}
@@ -207,7 +279,7 @@ export function CoverageView({
                   ) : null}
                 </div>
                 <p className="mt-1 text-2xs leading-relaxed text-slate-700">{excluded.reason}</p>
-              </li>
+              </Reveal>
             ))}
           </ul>
         </section>

@@ -1,6 +1,13 @@
 import type { ClassificationMethod } from '@/data/selectors/classification';
 import type { GeographyMode } from '@/geography/model';
 
+/**
+ * Which rows the ranked comparison shows. 'auto' picks the most useful view
+ * for the current selection: compared areas if any, else the selected area's
+ * neighbourhood in the distribution, else the two ends of it.
+ */
+export type RankingView = 'auto' | 'around' | 'extremes' | 'compared';
+
 export type AtlasMode =
   | 'discover' | 'explore' | 'stories' | 'explain' | 'briefing' | 'methods' | 'coverage';
 
@@ -38,6 +45,7 @@ export interface AtlasState {
   /** Comparison period for change views. Must be in the same period series. */
   readonly comparePeriod: string | null;
   readonly subgroupCategoryType: string | null;
+  readonly rankingView: RankingView;
 }
 
 export const DEFAULT_STATE: AtlasState = {
@@ -58,6 +66,7 @@ export const DEFAULT_STATE: AtlasState = {
   scatterIndicatorId: null,
   comparePeriod: null,
   subgroupCategoryType: null,
+  rankingView: 'auto',
 };
 
 export const MAX_COMPARISON_AREAS = 4;
@@ -80,12 +89,14 @@ const KEYS = {
   scatterIndicatorId: 'x',
   comparePeriod: 'p2',
   subgroupCategoryType: 'sg',
+  rankingView: 'rk',
 } as const;
 
 const MODES: readonly AtlasMode[] = [
   'discover', 'explore', 'stories', 'explain', 'briefing', 'methods', 'coverage',
 ];
 const GEOGRAPHY_MODES: readonly GeographyMode[] = ['administrative', 'nhs'];
+const RANKING_VIEWS: readonly RankingView[] = ['auto', 'around', 'extremes', 'compared'];
 const CLASSIFICATIONS: readonly ClassificationMethod[] = [
   'quantile', 'equal-interval', 'fixed',
 ];
@@ -121,6 +132,7 @@ export function serialiseState(state: AtlasState): string {
   put(KEYS.scatterIndicatorId, state.scatterIndicatorId?.toString());
   put(KEYS.comparePeriod, state.comparePeriod);
   put(KEYS.subgroupCategoryType, state.subgroupCategoryType);
+  if (state.rankingView !== DEFAULT_STATE.rankingView) put(KEYS.rankingView, state.rankingView);
 
   return params.toString();
 }
@@ -199,6 +211,7 @@ export function deserialiseState(query: string): AtlasState {
     scatterIndicatorId: int(KEYS.scatterIndicatorId),
     comparePeriod: str(KEYS.comparePeriod),
     subgroupCategoryType: str(KEYS.subgroupCategoryType),
+    rankingView: oneOf(KEYS.rankingView, RANKING_VIEWS, DEFAULT_STATE.rankingView),
   };
 }
 

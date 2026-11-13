@@ -133,9 +133,15 @@ export function renderMapSvg(options: MapSvgOptions): string {
     height - mapTop - margin - footerHeight - evidenceHeight -
     (isPresentation ? 0 : legendHeight);
 
+  // Fit to the covered nations, as the interactive map does. Uncovered areas
+  // are still drawn as context, clipped to the frame, and keep their own style.
+  const isContext = (area: (typeof viewModel.areas)[number]) =>
+    area.render.kind === 'non-data' && area.render.style === 'outsideCoverage';
+  const coveredFeatures = viewModel.areas.filter((area) => !isContext(area));
   const featureCollection = {
     type: 'FeatureCollection' as const,
-    features: viewModel.areas.map((area) => area.feature),
+    features: (coveredFeatures.length > 0 ? coveredFeatures : viewModel.areas)
+      .map((area) => area.feature),
   };
 
   // The identical projection family the interactive chart uses.
@@ -186,8 +192,10 @@ export function renderMapSvg(options: MapSvgOptions): string {
     }
   }
 
+  const clipHeight = round(Math.max(80, mapHeight));
   const mapGroup = group(
-    [...polygons, ...selectionOutlines].join('\n'),
+    `<clipPath id="map-frame"><rect x="0" y="0" width="${round(mapWidth)}" height="${clipHeight}" /></clipPath>` +
+      `<g clip-path="url(#map-frame)">${[...polygons, ...selectionOutlines].join('\n')}</g>`,
     `translate(${margin}, ${round(mapTop)})`,
   );
 

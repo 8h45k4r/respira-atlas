@@ -198,7 +198,7 @@ function ExploreBody({
       />
 
       {/* Breadcrumb and back */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-1.5 no-print">
+      <div className="shell flex flex-wrap items-center gap-2 border-b border-slate-200 py-1.5 no-print">
         <Button
           variant="ghost"
           size="sm"
@@ -256,7 +256,7 @@ function ExploreBody({
       </div>
 
       {allNotices.length > 0 ? (
-        <div className="border-b border-amber-200 bg-amber-50 px-3 py-1.5" role="status">
+        <div className="shell border-b border-amber-200 bg-amber-50 py-1.5" role="status">
           <ul className="space-y-0.5 text-2xs text-amber-900">
             {allNotices.map((notice) => <li key={notice}>{notice}</li>)}
           </ul>
@@ -264,14 +264,14 @@ function ExploreBody({
       ) : null}
 
       {searchNotice ? (
-        <div className="flex items-start gap-2 border-b border-brass-200 bg-brass-50 px-3 py-2" role="status">
+        <div className="shell flex items-start gap-2 border-b border-brass-200 bg-brass-50 py-2" role="status">
           <p className="flex-1 text-xs text-brass-900">{searchNotice}</p>
           <Button variant="ghost" size="sm" onClick={onDismissNotice}>Dismiss</Button>
         </div>
       ) : null}
 
       {/* Desktop: map-led split. Tablet/mobile: a coherent stack. */}
-      <div className="grid min-h-0 flex-1 gap-2 p-2 lg:grid-cols-[17rem_minmax(0,1fr)_19rem]">
+      <div className="shell grid min-h-0 flex-1 gap-3 py-3 lg:grid-cols-[16rem_minmax(0,1fr)_18rem]">
         <div className="order-1 space-y-3 lg:order-none">
           <div className="panel p-3 no-print">
             <AreaSearch
@@ -309,6 +309,14 @@ function ExploreBody({
               source: selection.indicator.dataSource ?? 'Not stated',
             }}
             coverageLabel={`${selection.indicator.coverage.nations.join(', ')} coverage`}
+            caveats={[
+              ...(analysis.viewModel.counts.outsideCoverage > 0
+                ? [{ kind: 'coverage' as const, label: `${selection.indicator.coverage.nations.join(' and ')} only` }]
+                : []),
+              { kind: 'areas', label: 'Area-level, not people' },
+              { kind: 'not-causal', label: 'Pattern, not cause' },
+              { kind: 'recording', label: 'Reflects recording too' },
+            ]}
             limitation={
               <>
                 {analysis.viewModel.coverageNote
@@ -340,13 +348,14 @@ function ExploreBody({
                 onSelect={onSelectArea}
                 layerKey={selection.areaType.key}
                 ariaLabel={`${analysis.question} ${analysis.viewModel.subtitle}`}
+                coveredLabel={selection.indicator.coverage.nations.join(' and ')}
                 height={520}
               />
               <MapLegend viewModel={analysis.viewModel} indicator={selection.indicator} />
             </div>
           </FigureFrame>
 
-          <div className="grid gap-2 xl:grid-cols-2">
+          <div className="grid items-start gap-2 xl:grid-cols-2">
             <TrendFigure
               catalogue={catalogue}
               selection={selection}
@@ -362,6 +371,7 @@ function ExploreBody({
               state={state}
               registry={registry}
               onSelect={onSelectArea}
+              onChange={onChange}
             />
           </div>
 
@@ -387,6 +397,11 @@ function ExploreBody({
             <AreaDetailPanel
               area={selectedArea}
               observation={analysis.selectedObservation}
+              benchmark={analysis.benchmarkObservation}
+              flagLevel={observations.flagLevel}
+              observations={observations}
+              sex={analysis.sex}
+              periodSeries={analysis.periodSeries}
               indicator={selection.indicator}
               evidence={analysis.evidence}
               period={analysis.period}
@@ -399,35 +414,23 @@ function ExploreBody({
             <div className="panel p-4">
               <h2 className="text-sm font-semibold text-oxford-900">Select a place</h2>
               <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-                Choose an area on the map, search for a place, or pick a row in the data
-                table. The data table is fully keyboard-operable and does everything the
-                map does.
+                Click the map, search, or use the keyboard-friendly data table.
               </p>
-              <dl className="mt-3 space-y-1.5 font-figure text-2xs">
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-500">Areas with a value</dt>
-                  <dd className="tabular-nums text-oxford-900">
-                    {analysis.viewModel.counts.withValue}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-500">No value published</dt>
-                  <dd className="tabular-nums text-oxford-900">
-                    {analysis.viewModel.counts.missing}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-500">Suppressed</dt>
-                  <dd className="tabular-nums text-oxford-900">
-                    {analysis.viewModel.counts.suppressed}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-500">Outside dataset coverage</dt>
-                  <dd className="tabular-nums text-oxford-900">
-                    {analysis.viewModel.counts.outsideCoverage}
-                  </dd>
-                </div>
+              <dl className="mt-3 grid grid-cols-2 gap-1.5">
+                {([
+                  ['With a value', analysis.viewModel.counts.withValue, 'bg-oxford-700'],
+                  ['No value published', analysis.viewModel.counts.missing, 'bg-slate-200'],
+                  ['Suppressed', analysis.viewModel.counts.suppressed, 'bg-slate-300'],
+                  ['Outside dataset coverage', analysis.viewModel.counts.outsideCoverage, 'bg-slate-100'],
+                ] as const).map(([label, count, swatch]) => (
+                  <div key={label} className="flex flex-col-reverse rounded-md border border-slate-200 bg-white px-2 py-1.5">
+                    <dt className="mt-1 font-figure text-2xs text-slate-500">{label}</dt>
+                    <dd className="flex items-center gap-1.5 text-lg font-semibold tabular-nums leading-none text-oxford-900">
+                      <span aria-hidden className={`h-2.5 w-2.5 rounded-sm border border-slate-300 ${swatch}`} />
+                      {count}
+                    </dd>
+                  </div>
+                ))}
               </dl>
             </div>
           )}

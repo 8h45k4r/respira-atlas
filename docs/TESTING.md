@@ -9,8 +9,10 @@ Reproduce with `npm test`, `npm run smoke` and `npm run data:validate`.
 code shared by the interface, the evidence stories and the exports:
 classification and breakpoints, benchmark comparison, the comparability gate,
 the missing/suppressed/zero distinction, evidence-statement eligibility, URL
-round trips, columnar decode integrity, SVG export content, and the story
-computations.
+round trips, columnar decode integrity, SVG export content, the story
+computations, and the chart rules: per-indicator axis baselines, ranking and
+ties, selection order, no rotated text, direct labels, drawn axis breaks, gaps
+as line breaks, the publisher-flag glyphs, and sex-separated trend lines.
 
 **Browser tests** (`tests/smoke/`, Playwright) run against the **production
 build** served by `vite preview`, exercising the same bundle, asset paths and
@@ -21,13 +23,18 @@ SPA fallback Cloudflare serves. Any console error fails the run.
 ### Unit tests
 
 ```
-      Tests  94 passed (94)
-   Start at  15:33:21
-   Duration  938ms (transform 524ms, setup 0ms, collect 932ms, tests 264ms, environment 1ms, prepare 391ms)
-
+ Test Files  8 passed (8)
+      Tests  106 passed (106)
+   Duration  1.76s (transform 947ms, setup 0ms, collect 1.72s, tests 490ms, environment 1ms, prepare 619ms)
 ```
 
 ### Browser smoke tests
+
+> Re-run for the visualisation changes (2026-11-13): 28 of 29 passed. The one
+> failure was "no console errors during the run", caused by a single 404. The
+> original commit fails in the same way in the same environment, so it predates
+> those changes; it has not yet been traced. The output below is from the
+> earlier run.
 
 ```
 --- browser smoke tests ---

@@ -76,6 +76,10 @@ export function ScatterFigure({
         unit: other ? `${other.unit} against ${selection.indicator.unit}` : '—',
         source: selection.indicator.dataSource ?? 'Not stated',
       }}
+      caveats={[
+        { kind: 'not-causal', label: 'Association, not cause' },
+        { kind: 'areas', label: 'Areas, not people' },
+      ]}
       limitation="Both axes are area-level measures. Any pattern describes areas, not people: an area-level association cannot be read as an individual-level or causal relationship. This is the ecological fallacy, and it is the reason no trend line or correlation coefficient is drawn."
       actions={
         <div className="w-56">

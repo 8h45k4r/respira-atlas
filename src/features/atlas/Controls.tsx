@@ -1,4 +1,5 @@
-import { Lock, Unlock, RotateCcw } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Lock, Unlock, RotateCcw, Info } from 'lucide-react';
 import type { Catalogue } from '@/hooks/useAtlasCatalogue';
 import type { AtlasState } from '@/state/atlas-state';
 import type { ResolvedSelection } from './useAnalysis';
@@ -87,9 +88,7 @@ export function Controls({
             </button>
           ))}
         </div>
-        <p className="mt-1 text-2xs leading-relaxed text-slate-500">
-          {manifest.geographyModes[state.geographyMode]?.description}
-        </p>
+        <Hint>{manifest.geographyModes[state.geographyMode]?.description}</Hint>
       </div>
 
       <div>
@@ -154,9 +153,7 @@ export function Controls({
             })}
           </SelectContent>
         </Select>
-        <p className="mt-1 text-2xs leading-relaxed text-slate-500">
-          {manifest.topics[activeTopic]?.question}
-        </p>
+        <Hint>{manifest.topics[activeTopic]?.question}</Hint>
       </div>
 
       <div>
@@ -221,14 +218,15 @@ export function Controls({
             </SelectContent>
           </Select>
           {observations.requiresSexChoice ? (
-            <p className="mt-1 text-2xs leading-relaxed text-brass-700">
-              No combined figure is published for this measure. The categories are the
-              publisher’s recorded sex categories, not gender identity.
-            </p>
+            <>
+              <Badge tone="brass" className="mt-1">No combined figure: choose one</Badge>
+              <Hint>
+                No combined figure is published for this measure. The categories are the
+                publisher’s recorded sex categories, not gender identity.
+              </Hint>
+            </>
           ) : (
-            <p className="mt-1 text-2xs leading-relaxed text-slate-500">
-              Recorded sex as the publisher categorises it, not gender identity.
-            </p>
+            <Hint>Recorded sex as the publisher categorises it, not gender identity.</Hint>
           )}
         </div>
       ) : null}
@@ -251,10 +249,10 @@ export function Controls({
               ))}
             </SelectContent>
           </Select>
-          <p className="mt-1 text-2xs leading-relaxed text-amber-800">
+          <Hint>
             This indicator publishes {series.map((s) => s.label.toLowerCase()).join(' and ')}{' '}
             periods. They are separate series and are never plotted as one line.
-          </p>
+          </Hint>
         </div>
       ) : null}
 
@@ -275,11 +273,7 @@ export function Controls({
             ))}
           </SelectContent>
         </Select>
-        {activeSeries?.pooled ? (
-          <p className="mt-1 text-2xs leading-relaxed text-slate-500">
-            {activeSeries.description}
-          </p>
-        ) : null}
+        {activeSeries?.pooled ? <Hint>{activeSeries.description}</Hint> : null}
       </div>
 
       <div className="rule pt-3">
@@ -335,11 +329,11 @@ export function Controls({
           )}
           {state.lockScale ? 'Scale locked across periods' : 'Lock scale across periods'}
         </Button>
-        <p className="mt-1 text-2xs leading-relaxed text-slate-500">
+        <Hint>
           {state.lockScale
             ? 'Class breaks are computed once from the whole series, so colours mean the same thing in every period.'
             : 'Class breaks are recomputed for the selected period. Lock the scale before comparing periods.'}
-        </p>
+        </Hint>
       </div>
 
       <div className="rule flex items-center justify-between pt-3">
@@ -349,6 +343,28 @@ export function Controls({
           Reset
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Helper text behind an info toggle, so the controls read as controls.
+ * The text stays in the page (visually hidden) for screen readers when closed.
+ */
+function Hint({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="inline-flex items-center gap-1 rounded font-figure text-2xs text-slate-500 hover:text-oxford-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700"
+      >
+        <Info className="h-3 w-3" aria-hidden />
+        {open ? 'Hide note' : 'About this'}
+      </button>
+      <p className={open ? 'mt-1 text-2xs leading-relaxed text-slate-600' : 'sr-only'}>{children}</p>
     </div>
   );
 }

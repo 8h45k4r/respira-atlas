@@ -1,6 +1,7 @@
 import type { Indicator, GeographyAvailability } from '../schemas/manifest';
 import type { Observation, PresentObservation, Significance } from '../schemas/observation';
 import { isPresent, hasInterval } from '../schemas/observation';
+import { intervalAt, type IntervalLevel } from './flag-level';
 import { isPercentageMeasure } from './format';
 
 /** Why two observations may not be compared. */
@@ -99,6 +100,17 @@ export interface BenchmarkComparison {
    * descriptive observation about the interval, NOT as a hypothesis test.
    */
   readonly intervalContainsBenchmark: boolean | null;
+  /**
+   * The published interval at the level the publisher's flag follows (see
+   * `flag-level.ts`), and whether it contains the benchmark. Null when the
+   * level is unknown or that interval is not published for this area.
+   */
+  readonly flagInterval: {
+    readonly level: IntervalLevel;
+    readonly lower: number;
+    readonly upper: number;
+    readonly containsBenchmark: boolean;
+  } | null;
 }
 
 export function compareToBenchmark(
@@ -106,6 +118,7 @@ export function compareToBenchmark(
   benchmark: Observation | undefined,
   benchmarkLabel: string,
   indicator: Pick<Indicator, 'unit' | 'valueType'>,
+  flagLevel: IntervalLevel | null = null,
 ): BenchmarkComparison | null {
   if (!isPresent(area) || !isPresent(benchmark)) return null;
 
@@ -126,6 +139,20 @@ export function compareToBenchmark(
     intervalContainsBenchmark: hasInterval(area)
       ? area.lowerCi95 <= benchmark.value && benchmark.value <= area.upperCi95
       : null,
+    flagInterval: flagIntervalFor(area, benchmark.value, flagLevel),
+  };
+}
+
+function flagIntervalFor(
+  area: PresentObservation, benchmarkValue: number, level: IntervalLevel | null,
+): BenchmarkComparison['flagInterval'] {
+  if (level === null) return null;
+  const interval = intervalAt(area, level);
+  if (!interval) return null;
+  return {
+    level,
+    ...interval,
+    containsBenchmark: interval.lower <= benchmarkValue && benchmarkValue <= interval.upper,
   };
 }
 

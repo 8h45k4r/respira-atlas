@@ -23,6 +23,7 @@ describe('URL state round trip', () => {
     scatterIndicatorId: 93867,
     comparePeriod: '2023/24',
     subgroupCategoryType: 'Sex',
+    rankingView: 'around',
   };
 
   it('round trips every field', () => {

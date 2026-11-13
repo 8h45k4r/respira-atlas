@@ -1,5 +1,8 @@
 import { type ReactNode, useId, useState } from 'react';
-import { Download, Table2, Info } from 'lucide-react';
+import {
+  Download, Table2, Users, CalendarRange, MapPinned, Ruler, Database, ChevronDown,
+} from 'lucide-react';
+import { CaveatChips, type Caveat } from './CaveatChips';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger, Badge } from '@/components/ui/misc';
 import { cn } from '@/lib/utils';
@@ -22,6 +25,12 @@ export interface FigureFrameProps {
   readonly evidence?: ReactNode;
   /** The limitation or uncertainty statement. Required: never optional in practice. */
   readonly limitation: ReactNode;
+  /**
+   * The limitation as short, always-visible icon chips. When given, the full
+   * limitation text sits one click away ("Why?") instead of as a paragraph;
+   * it is still in the page for assistive technology and in print.
+   */
+  readonly caveats?: readonly Caveat[];
   readonly coverageLabel?: string | null;
   readonly children: ReactNode;
   readonly table?: ReactNode;
@@ -41,12 +50,14 @@ export interface FigureFrameProps {
  * working export. A visual cannot be added to this product without them.
  */
 export function FigureFrame({
-  question, indicatorName, meta, evidence, limitation, coverageLabel,
+  question, indicatorName, meta, evidence, limitation, caveats, coverageLabel,
   children, table, onExport, exportLabel = 'Export figure',
   accessibleDescription, className, actions,
 }: FigureFrameProps) {
   const headingId = useId();
+  const whyId = useId();
   const [tableOpen, setTableOpen] = useState(false);
+  const [whyOpen, setWhyOpen] = useState(false);
 
   return (
     <figure
@@ -89,11 +100,12 @@ export function FigureFrame({
         </div>
       </div>
 
-      {/* Population, period, geography, unit and source are always visible. */}
-      <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-100 bg-slate-50/60 px-4 py-2 figure-meta">
-        <MetaItem label="Population" value={meta.population} />
-        <MetaItem label="Period" value={meta.period} />
-        <MetaItem
+      {/* Population, period, geography, unit and source: always visible, as chips. */}
+      <dl className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 bg-slate-50/60 px-4 py-1.5 figure-meta">
+        <MetaChip icon={Users} label="Population" value={meta.population} />
+        <MetaChip icon={CalendarRange} label="Period" value={meta.period} />
+        <MetaChip
+          icon={MapPinned}
           label="Geography"
           value={
             meta.boundaryVintage
@@ -101,8 +113,8 @@ export function FigureFrame({
               : meta.geography
           }
         />
-        <MetaItem label="Unit" value={meta.unit} />
-        <MetaItem label="Source" value={meta.source} />
+        <MetaChip icon={Ruler} label="Unit" value={meta.unit} />
+        <MetaChip icon={Database} label="Source" value={meta.source} />
         {coverageLabel ? (
           <Badge tone="warn" className="ml-auto">{coverageLabel}</Badge>
         ) : null}
@@ -120,21 +132,62 @@ export function FigureFrame({
         </figcaption>
       ) : null}
 
-      <div className="flex items-start gap-2 border-t border-slate-200 bg-amber-50/40 px-4 py-2.5">
-        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700" aria-hidden />
-        <p className="font-figure text-2xs leading-relaxed text-amber-950">
-          <span className="font-semibold">Limitation.</span> {limitation}
-        </p>
-      </div>
+      {caveats && caveats.length > 0 ? (
+        <div className="border-t border-slate-200 bg-amber-50/40 px-4 py-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <CaveatChips caveats={caveats} />
+            <button
+              type="button"
+              aria-expanded={whyOpen}
+              aria-controls={whyId}
+              onClick={() => setWhyOpen((open) => !open)}
+              className="ml-auto inline-flex items-center gap-0.5 rounded font-figure text-2xs font-semibold text-amber-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700 no-print"
+            >
+              Why?
+              <ChevronDown
+                className={cn('h-3 w-3 transition-transform', whyOpen && 'rotate-180')}
+                aria-hidden
+              />
+            </button>
+          </div>
+          <p
+            id={whyId}
+            className={cn(
+              'mt-1.5 font-figure text-2xs leading-relaxed text-amber-950',
+              !whyOpen && 'hidden print:block',
+            )}
+          >
+            <span className="font-semibold">Limitation.</span> {limitation}
+          </p>
+          {/* Screen readers always get the full limitation. */}
+          {!whyOpen ? <p className="sr-only">Limitation. {limitation}</p> : null}
+        </div>
+      ) : (
+        <div className="flex items-start gap-2 border-t border-slate-200 bg-amber-50/40 px-4 py-2.5">
+          <p className="font-figure text-2xs leading-relaxed text-amber-950">
+            <span className="font-semibold">Limitation.</span> {limitation}
+          </p>
+        </div>
+      )}
     </figure>
   );
 }
 
-function MetaItem({ label, value }: { label: string; value: string }) {
+function MetaChip({
+  icon: Icon, label, value,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="flex items-baseline gap-1">
-      <dt className="font-semibold uppercase tracking-[0.05em] text-slate-500">{label}</dt>
-      <dd className="text-slate-700">{value}</dd>
+    <div
+      className="inline-flex min-w-0 max-w-[14rem] items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5"
+      title={`${label}: ${value}`}
+    >
+      <dt className="sr-only">{label}</dt>
+      <Icon className="h-3 w-3 shrink-0 text-slate-400" aria-hidden />
+      <dd className="truncate text-slate-700">{value}</dd>
     </div>
   );
 }

@@ -249,9 +249,12 @@ export function useAnalysis({
       ? registry.get(state.selectedAreaCode)
       : undefined;
 
-    // The previous period must come from the same series, or no change is shown.
+    // The previous period must come from the same series, or no change is shown,
+    // and it must share no years with this one: neighbouring rolling 3-year
+    // periods share two years of data, so their difference is mostly overlap.
     const seriesIndex = series.periods.indexOf(period);
-    const previousPeriod = seriesIndex > 0 ? series.periods[seriesIndex - 1] : undefined;
+    const step = series.pooled ? series.years : 1;
+    const previousPeriod = seriesIndex - step >= 0 ? series.periods[seriesIndex - step] : undefined;
     const previousObservation =
       previousPeriod && state.selectedAreaCode
         ? observations.observations.find(
@@ -281,6 +284,7 @@ export function useAnalysis({
             previousPeriod,
             sex,
             age: observations.age,
+            flagLevel: observations.flagLevel,
           } satisfies EvidenceContext,
           areaType.boundaryVintage,
         )

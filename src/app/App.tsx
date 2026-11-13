@@ -82,26 +82,37 @@ function AppFooter({
   manifest: import('@/data/schemas/manifest').Manifest | null;
 }) {
   return (
-    <footer className="mt-auto border-t border-slate-200 bg-slate-50/60 px-4 py-3 no-print">
-      <div className="mx-auto flex max-w-[110rem] flex-wrap items-start gap-x-6 gap-y-2 font-figure text-2xs leading-relaxed text-slate-600">
-        <p className="max-w-3xl">
-          <span className="font-semibold text-slate-700">
-            Public Health Evidence Atlas.
-          </span>{' '}
-          An independent research tool, built and maintained by a named team. The
-          institutions its contributors work for or have worked for have not reviewed,
-          endorsed or funded it, and it carries no endorsement from the NHS, the Office
-          for Health Improvement and Disparities or the Office for National Statistics.
-        </p>
+    <footer className="mt-auto border-t border-slate-200 bg-slate-50/60 py-3 no-print">
+      <div className="shell flex flex-wrap items-center gap-x-4 gap-y-1.5 font-figure text-2xs text-slate-600">
+        <span className="font-semibold text-slate-700">Public Health Evidence Atlas</span>
+        <span>Independent · not endorsed by the NHS, OHID or ONS</span>
         {manifest ? (
-          <p className="max-w-2xl">
-            {manifest.licences.observations.attribution}{' '}
-            {manifest.licences.boundaries.attribution} Data prepared{' '}
-            {manifest.generatedAt.slice(0, 10)}. Interactive charts rendered with
-            amCharts 5 under its free licence, which requires the attribution link
-            shown on the map.
-          </p>
+          <span>
+            Data: OHID Fingertips · Open Government Licence v3.0 · © Crown copyright · prepared{' '}
+            {manifest.generatedAt.slice(0, 10)}
+          </span>
         ) : null}
+        <details className="ml-auto">
+          <summary className="cursor-pointer select-none font-semibold text-oxford-700 hover:text-brass-700">
+            Licensing & independence
+          </summary>
+          <div className="mt-2 max-w-3xl space-y-1.5 leading-relaxed">
+            <p>
+              An independent research tool, built and maintained by a named team. The
+              institutions its contributors work for or have worked for have not reviewed,
+              endorsed or funded it, and it carries no endorsement from the NHS, the Office
+              for Health Improvement and Disparities or the Office for National Statistics.
+            </p>
+            {manifest ? (
+              <p>
+                {manifest.licences.observations.attribution}{' '}
+                {manifest.licences.boundaries.attribution} Interactive maps are rendered with
+                amCharts 5 under its free licence, which requires the attribution link shown
+                on the map.
+              </p>
+            ) : null}
+          </div>
+        </details>
       </div>
     </footer>
   );

@@ -3,6 +3,7 @@ import type { Observation } from '@/data/schemas/observation';
 import type { ObservationSet } from '@/data/loader';
 import type { AreaRegistry } from '@/geography/model';
 import type { AtlasState } from '@/state/atlas-state';
+import type { StatItem, SplitSegment, RangeEnd } from '@/components/infographics/infographics';
 
 /** One indicator at one geography that a story needs in order to run. */
 export interface StoryRequirement {
@@ -38,11 +39,29 @@ export type StoryFigure =
   | { kind: 'scatter'; xDataset: string; yDataset: string; period: string; caption: string }
   | { kind: 'groups'; dataset: string; areaCode: string; caption: string };
 
+/**
+ * A step's numbers as a picture. Built in the same place, from the same
+ * computed values, as the step's prose — so the graphic and the words can
+ * never disagree, and neither carries an authored number.
+ */
+export type StoryGraphic =
+  | { kind: 'stats'; items: readonly StatItem[] }
+  | { kind: 'split'; caption: string; segments: readonly SplitSegment[] }
+  | {
+      kind: 'range';
+      ranges: readonly {
+        measure: string; unit: string; low: RangeEnd; median?: RangeEnd | null;
+        high: RangeEnd; ratio?: string | null;
+      }[];
+    }
+  | { kind: 'contrast'; is: readonly string[]; isNot: readonly string[] };
+
 export interface StoryStep {
   readonly heading: string;
   /** Computed from the data. Never authored with numbers in it. */
   readonly body: string;
   readonly figure?: StoryFigure;
+  readonly graphic?: StoryGraphic;
   /** A caveat that belongs with this specific step. */
   readonly note?: string;
 }

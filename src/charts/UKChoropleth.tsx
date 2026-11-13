@@ -4,6 +4,7 @@ import * as am5map from '@amcharts/amcharts5/map';
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
 import type { MapViewModel, AreaViewModel } from './map-view-model';
 import { NON_DATA_STYLES } from './palette';
+import { CoverageInset } from './CoverageInset';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 
 export interface UKChoroplethProps {
@@ -14,25 +15,31 @@ export interface UKChoroplethProps {
   readonly layerKey: string;
   readonly height?: number;
   readonly ariaLabel: string;
+  /** Nations the dataset covers, for the coverage inset ("England"). */
+  readonly coveredLabel: string;
 }
 
 /**
  * Interactive UK choropleth.
  *
  * Only the UK is drawn: there is no world map, no globe and no background
- * geography. The projection is fitted to the UK bounding box including Northern
- * Ireland and the Scottish islands, so the whole state is visible at first paint.
+ * geography. The view is fitted to the nations the dataset covers (England for
+ * every current indicator), so the data fill the frame instead of sharing it
+ * with three nations that have no values. Uncovered nations stay on the map as
+ * a faint, still-selectable context layer that does not affect the fit, and a
+ * locator inset states the coverage in one line.
  *
  * The amCharts root is created once per geography layer. Changing indicator,
  * period or classification updates polygon fills in place rather than remounting
  * the chart, which keeps filtering responsive on a 218-polygon layer.
  */
 export function UKChoropleth({
-  viewModel, onSelect, onHover, layerKey, height = 560, ariaLabel,
+  viewModel, onSelect, onHover, layerKey, height = 560, ariaLabel, coveredLabel,
 }: UKChoroplethProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<am5.Root | null>(null);
   const seriesRef = useRef<am5map.MapPolygonSeries | null>(null);
+  const contextSeriesRef = useRef<am5map.MapPolygonSeries | null>(null);
   const chartRef = useRef<am5map.MapChart | null>(null);
   const reducedMotion = usePrefersReducedMotion();
   const titleId = useId();
@@ -50,15 +57,24 @@ export function UKChoropleth({
   onSelectRef.current = onSelect;
   onHoverRef.current = onHover;
 
-  const geoJson = useMemo(
-    () => ({
-      type: 'FeatureCollection' as const,
-      features: viewModel.areas.map((area) => area.feature),
-    }),
-    // Geometry only changes when the layer changes; fills are applied separately.
+  // Geometry only changes when the layer changes; fills are applied separately.
+  // Coverage is a property of the release, not the indicator, so the split
+  // between covered and context areas is stable for a layer.
+  const { geoJson, contextGeoJson } = useMemo(() => {
+    const isContext = (area: AreaViewModel) =>
+      area.render.kind === 'non-data' && area.render.style === 'outsideCoverage';
+    return {
+      geoJson: {
+        type: 'FeatureCollection' as const,
+        features: viewModel.areas.filter((area) => !isContext(area)).map((area) => area.feature),
+      },
+      contextGeoJson: {
+        type: 'FeatureCollection' as const,
+        features: viewModel.areas.filter(isContext).map((area) => area.feature),
+      },
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [layerKey],
-  );
+  }, [layerKey]);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -84,6 +100,16 @@ export function UKChoropleth({
     );
     chartRef.current = chart;
 
+    // Context first, so it sits underneath. It never affects the fitted bounds.
+    const contextSeries = chart.series.push(
+      am5map.MapPolygonSeries.new(root, {
+        geoJSON: contextGeoJson as never,
+        affectsBounds: false,
+        calculateAggregates: false,
+      }),
+    );
+    contextSeriesRef.current = contextSeries;
+
     const series = chart.series.push(
       am5map.MapPolygonSeries.new(root, {
         geoJSON: geoJson as never,
@@ -93,65 +119,71 @@ export function UKChoropleth({
     );
     seriesRef.current = series;
 
-    series.mapPolygons.template.setAll({
-      strokeWidth: 0.5,
-      stroke: am5.color('#ffffff'),
-      interactive: true,
-      tooltipText: '{description}',
-      // Cursor and a lightened fill signal interactivity; neither encodes a value.
-      cursorOverStyle: 'pointer',
-    });
+    for (const target of [series, contextSeries]) {
+      target.mapPolygons.template.setAll({
+        strokeWidth: 0.5,
+        stroke: am5.color('#ffffff'),
+        interactive: true,
+        tooltipText: '{description}',
+        // Cursor and a lightened fill signal interactivity; neither encodes a value.
+        cursorOverStyle: 'pointer',
+      });
 
-    series.mapPolygons.template.states.create('hover', {
-      fillOpacity: 0.78,
-      strokeWidth: 1.6,
-      stroke: am5.color('#141f36'),
-    });
+      target.mapPolygons.template.states.create('hover', {
+        fillOpacity: 0.78,
+        strokeWidth: 1.6,
+        stroke: am5.color('#141f36'),
+      });
 
-    series.mapPolygons.template.events.on('click', (event) => {
-      const context = event.target.dataItem?.dataContext as { code?: string } | undefined;
-      if (context?.code) onSelectRef.current(context.code);
-    });
-    series.mapPolygons.template.events.on('pointerover', (event) => {
-      const context = event.target.dataItem?.dataContext as { code?: string } | undefined;
-      onHoverRef.current?.(context?.code ?? null);
-    });
-    series.mapPolygons.template.events.on('pointerout', () => {
-      onHoverRef.current?.(null);
-    });
+      target.mapPolygons.template.events.on('click', (event) => {
+        const context = event.target.dataItem?.dataContext as { code?: string } | undefined;
+        if (context?.code) onSelectRef.current(context.code);
+      });
+      target.mapPolygons.template.events.on('pointerover', (event) => {
+        const context = event.target.dataItem?.dataContext as { code?: string } | undefined;
+        onHoverRef.current?.(context?.code ?? null);
+      });
+      target.mapPolygons.template.events.on('pointerout', () => {
+        onHoverRef.current?.(null);
+      });
+    }
 
     const zoomControl = chart.set('zoomControl', am5map.ZoomControl.new(root, {}));
     zoomControl.homeButton.set('visible', true);
 
-    // Fit the UK once geometry is in place, including Northern Ireland and islands,
-    // and paint the polygons as soon as they exist.
+    // Fit the covered nation once geometry is in place, and paint the polygons
+    // as soon as they exist.
     series.events.on('datavalidated', () => {
       applyStylingRef.current();
       chart.goHome(0);
     });
+    contextSeries.events.on('datavalidated', () => applyStylingRef.current());
 
     return () => {
       // Every chart root is disposed on unmount; nothing is left holding the DOM node.
       seriesRef.current = null;
+      contextSeriesRef.current = null;
       chartRef.current = null;
       rootRef.current = null;
       root.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geoJson, reducedMotion]);
+  }, [geoJson, contextGeoJson, reducedMotion]);
 
   // Apply fills, outlines and descriptions without rebuilding the chart.
   const applyStyling = useCallback(() => {
-    const series = seriesRef.current;
     const root = rootRef.current;
-    if (!series || !root) return;
+    const allSeries = [seriesRef.current, contextSeriesRef.current].filter(
+      (candidate): candidate is am5map.MapPolygonSeries => candidate !== null,
+    );
+    if (allSeries.length === 0 || !root) return;
 
     const current = viewModelRef.current;
     const byCode = new Map<string, AreaViewModel>(
       current.areas.map((area) => [area.code, area]),
     );
 
-    series.mapPolygons.each((polygon) => {
+    for (const series of allSeries) series.mapPolygons.each((polygon) => {
       const context = polygon.dataItem?.dataContext as { code?: string } | undefined;
       const area = context?.code ? byCode.get(context.code) : undefined;
       if (!area) return;
@@ -206,6 +238,10 @@ export function UKChoropleth({
         style={{ height }}
         className="w-full bg-white"
       />
+      {/* Top-left: the amCharts attribution, which must stay visible, is bottom-left. */}
+      <div className="absolute left-2 top-2">
+        <CoverageInset areas={viewModel.areas} layerKey={layerKey} coveredLabel={coveredLabel} />
+      </div>
       {/* A text alternative to the map; the linked table below is the full one. */}
       <p id={`${titleId}-desc`} className="sr-only">
         {viewModel.subtitle}. {viewModel.classificationNote}{' '}

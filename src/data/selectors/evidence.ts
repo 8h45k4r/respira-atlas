@@ -6,6 +6,7 @@ import {
   isPercentageMeasure, isAgeStandardised,
 } from './format';
 import { compareToBenchmark, allowsQualitativeReading, type BenchmarkComparison } from './comparison';
+import type { FlagLevel } from './flag-level';
 
 /**
  * Evidence statements are generated from deterministic templates and validated
@@ -35,6 +36,12 @@ export interface EvidenceContext {
   readonly previousPeriod?: string | undefined;
   readonly sex: string;
   readonly age: string;
+  /**
+   * The interval level the publisher's England flag follows in this dataset.
+   * Only an `exact` level lets the statement present the interval as the
+   * basis of the flag.
+   */
+  readonly flagLevel?: FlagLevel | null;
 }
 
 export interface EvidenceStatement {
@@ -173,7 +180,72 @@ function significanceClause(
     : flag === 'higher' ? `higher than ${comparison.benchmarkLabel}`
     : `lower than ${comparison.benchmarkLabel}`;
 
-  return `The publisher's own significance flag records this area as ${descriptor}.`;
+  const level = comparison.flagInterval ? ` at the ${comparison.flagInterval.level}% level` : '';
+  return `The publisher's own significance flag records this area as ${descriptor}${level}.`;
+}
+
+/**
+ * How the area's interval relates to the benchmark, said in a way that cannot
+ * contradict the publisher's flag.
+ *
+ * Where the dataset shows the flag follows one interval level exactly, that
+ * interval is named as the basis of the flag — at 99.8% for the measures the
+ * publisher tests at that level, so a 95% interval that misses England is not
+ * presented as if it disagreed with a "similar" flag. Otherwise the interval is
+ * described, never treated as a test.
+ */
+function benchmarkIntervalSentences(
+  comparison: BenchmarkComparison,
+  context: EvidenceContext,
+): string[] {
+  const { indicator } = context;
+  const label = comparison.benchmarkLabel;
+  const flag = comparison.sourceSignificance;
+  const flagInterval = comparison.flagInterval;
+  const exact = context.flagLevel?.basis === 'exact';
+
+  if (flag !== 'not-compared' && exact && flagInterval) {
+    const flaggedDifferent = flag !== 'similar';
+    if (flagInterval.containsBenchmark !== flaggedDifferent) {
+      const includes = flagInterval.containsBenchmark ? 'includes' : 'does not include';
+      if (flagInterval.level === 95) {
+        return [
+          `That interval ${includes} the ${label} value — the same check the publisher's ` +
+            'flag uses.',
+        ];
+      }
+      const sentences = [
+        `The publisher's flag uses the wider 99.8% interval ` +
+          `(${formatInterval(flagInterval.lower, flagInterval.upper, indicator)}), which ` +
+          `${includes} the ${label} value.`,
+      ];
+      if (
+        comparison.intervalContainsBenchmark === false &&
+        flagInterval.containsBenchmark
+      ) {
+        sentences.push(
+          `So the area is flagged similar even though its 95% interval misses ${label}.`,
+        );
+      }
+      return sentences;
+    }
+  }
+
+  if (comparison.intervalContainsBenchmark === null) return [];
+  const sentences = [
+    comparison.intervalContainsBenchmark
+      ? `That interval includes the ${label} value, so the data are consistent with no ` +
+        'real difference from the benchmark.'
+      : `That interval does not include the ${label} value. Treat this as a description ` +
+        'of the interval, not as a formal hypothesis test.',
+  ];
+  if (flag !== 'not-compared' && context.flagLevel?.basis === 'approximate') {
+    sentences.push(
+      `The publisher's flag does not follow either published interval exactly for this ` +
+        'measure, so the interval and the flag may not agree.',
+    );
+  }
+  return sentences;
 }
 
 function uncertaintyClause(
@@ -190,15 +262,7 @@ function uncertaintyClause(
         `${formatInterval(observation.lowerCi95, observation.upperCi95, indicator)} ` +
         `${indicator.unit === '%' ? 'per cent' : indicator.unit ?? ''}`.trimEnd() + '.',
     );
-    if (comparison && comparison.intervalContainsBenchmark !== null) {
-      sentences.push(
-        comparison.intervalContainsBenchmark
-          ? `That interval includes the ${comparison.benchmarkLabel} value, so the data are ` +
-            'consistent with no real difference from the benchmark.'
-          : `That interval does not include the ${comparison.benchmarkLabel} value. Treat this ` +
-            'as a description of the interval, not as a formal hypothesis test.',
-      );
-    }
+    if (comparison) sentences.push(...benchmarkIntervalSentences(comparison, context));
   } else {
     sentences.push(
       'No confidence interval is published for this observation, so the precision of the ' +
@@ -402,6 +466,7 @@ export function buildEvidenceStatement(
 
   const comparison = compareToBenchmark(
     observation, context.benchmarkObservation, context.benchmarkLabel, indicator,
+    context.flagLevel?.basis === 'exact' ? context.flagLevel.level : null,
   );
 
   const observed =
