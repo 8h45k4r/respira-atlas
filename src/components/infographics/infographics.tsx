@@ -303,3 +303,39 @@ export function FlowSteps({ nodes }: { nodes: readonly FlowNode[] }) {
     </ol>
   );
 }
+
+/* ---------------------------------------------------------------- rules */
+
+export interface Rule {
+  readonly icon: LucideIcon;
+  readonly title: string;
+  readonly body: ReactNode;
+  readonly tone?: 'oxford' | 'brass' | 'amber';
+}
+
+/** Rules as a grid of cards: an icon, a short title, the full rule beneath. */
+export function RuleGrid({ rules, columns = 2 }: { rules: readonly Rule[]; columns?: 2 | 3 }) {
+  const tones = {
+    oxford: 'border-slate-200 bg-white [&>span>svg]:bg-oxford-50 [&>span>svg]:text-oxford-600',
+    brass: 'border-brass-200 bg-brass-50/40 [&>span>svg]:bg-brass-100 [&>span>svg]:text-brass-700',
+    amber: 'border-amber-200 bg-amber-50/40 [&>span>svg]:bg-amber-100 [&>span>svg]:text-amber-800',
+  } as const;
+  return (
+    <ul className={cn('grid gap-2.5', columns === 3 ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2')}>
+      {rules.map((rule, index) => {
+        const Icon = rule.icon;
+        return (
+          <Reveal as="li" key={rule.title} delay={index * 60}
+            className={cn('flex gap-3 rounded-xl border p-3.5', tones[rule.tone ?? 'oxford'])}
+          >
+            <span className="shrink-0"><Icon className="h-8 w-8 rounded-lg p-1.5" aria-hidden /></span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold leading-snug text-oxford-900">{rule.title}</span>
+              <span className="mt-1 block text-xs leading-relaxed text-slate-600">{rule.body}</span>
+            </span>
+          </Reveal>
+        );
+      })}
+    </ul>
+  );
+}

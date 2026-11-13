@@ -202,6 +202,19 @@ Rules:
   compares with the period three steps back. The written statement and the
   change tile use the same rule.
 
+### Start, Coverage and Methods
+
+- **Start:** a hero with count-up stats and a coverage map drawn from the nations
+  layer (`CoverageMap`: covered nation filled, the rest hatched). Topics are a bar
+  chart of indicators per topic, questions a card grid, and recent uploads a
+  timeline (upload date ≠ data period, said in a chip).
+- **Coverage:** summary callouts, one tile per nation (England solid, other
+  nations hatched at zero) that doubles as the filter, the legend as chips, and
+  the matrix grouped by topic. It shows the covered nation by default.
+- **Methods:** six principles as icons above the tabs, then a claim-ladder
+  staircase, swatch cards for the four no-value states (drawn with the map's own
+  styles), a two-tree geography diagram, and `RuleGrid` cards for every rule.
+
 ## 10. Page shell
 
 Header, navigation, every view and the footer share one centred column, the

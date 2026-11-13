@@ -1,14 +1,24 @@
 import { useState } from 'react';
+import {
+  ScrollText, BookMarked, Map as MapIcon, Sigma, Database, Users as UsersIcon,
+  Eye, Unlink, ClipboardList, Scale, ListOrdered, CircleDashed, Check, X, Lock,
+  Ruler, MoveHorizontal, Palette, CalendarRange, Ban, Layers, Building2, Hospital,
+  MapPinned, Search, Link2Off, FileJson, HardDrive, ShieldCheck, Fingerprint,
+} from 'lucide-react';
 import type { Catalogue } from '@/hooks/useAtlasCatalogue';
 import { Tabs, TabsList, TabsTrigger, TabsContent, Badge } from '@/components/ui/misc';
-import { formatDate } from '@/lib/utils';
+import { formatDate, cn } from '@/lib/utils';
 import { TeamSection } from '@/features/about/TeamSection';
+import { Reveal } from '@/components/motion/motion';
+import { RuleGrid } from '@/components/infographics/infographics';
+import { NON_DATA_STYLES, SEQUENTIAL_OXFORD } from '@/charts/palette';
 
 /**
  * Methods, definitions and limits.
  *
- * Everything here is read from the prepared data rather than written by hand, so
- * the documentation cannot drift away from the dataset it describes.
+ * Everything here is read from the prepared data or states a rule the code
+ * enforces, so the documentation cannot drift from the dataset it describes.
+ * Rules are laid out as cards and diagrams; every sentence is still on the page.
  */
 export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
   const { manifest, indicators } = catalogue;
@@ -16,89 +26,116 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
   const indicator = indicators.find((item) => item.id === selectedId) ?? indicators[0];
 
   return (
-    <div className="shell py-5">
-      <div className="mb-4 max-w-3xl">
+    <div className="shell py-6">
+      <Reveal as="header" className="max-w-3xl">
         <p className="label-caps">Methods</p>
-        <h2 className="mt-1 text-lg font-semibold leading-tight text-oxford-900">
+        <h2 className="mt-1 text-2xl font-semibold leading-tight tracking-[-0.015em] text-oxford-900">
           How to read this atlas, and what it cannot tell you
         </h2>
-      </div>
+      </Reveal>
 
-      <Tabs defaultValue="interpretation">
-        <TabsList className="mb-4 w-full overflow-x-auto">
-          <TabsTrigger value="interpretation">Interpretation rules</TabsTrigger>
-          <TabsTrigger value="indicators">Indicator definitions</TabsTrigger>
-          <TabsTrigger value="geography">Geography</TabsTrigger>
-          <TabsTrigger value="statistics">Statistics and cartography</TabsTrigger>
-          <TabsTrigger value="provenance">Sources and licensing</TabsTrigger>
-          <TabsTrigger value="team">Team</TabsTrigger>
+      {/* The six rules a reader most needs, before any detail. */}
+      <ul className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {[
+          { icon: Eye, text: 'Descriptive only' },
+          { icon: CircleDashed, text: 'Blank ≠ zero' },
+          { icon: ClipboardList, text: 'Recorded ≠ true prevalence' },
+          { icon: Scale, text: 'Size ≠ evidence' },
+          { icon: ListOrdered, text: 'Rank ≠ performance' },
+          { icon: Unlink, text: 'Areas ≠ people' },
+        ].map(({ icon: Icon, text }, index) => (
+          <Reveal as="li" key={text} delay={index * 60}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-3 text-center shadow-sm"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-oxford-800 text-white">
+              <Icon className="h-4 w-4" aria-hidden />
+            </span>
+            <span className="text-xs font-semibold leading-tight text-oxford-900">{text}</span>
+          </Reveal>
+        ))}
+      </ul>
+
+      <Tabs defaultValue="interpretation" className="mt-6">
+        <TabsList className="mb-5 w-full overflow-x-auto">
+          {([
+            ['interpretation', ScrollText, 'Interpretation rules'],
+            ['indicators', BookMarked, 'Indicator definitions'],
+            ['geography', MapIcon, 'Geography'],
+            ['statistics', Sigma, 'Statistics and cartography'],
+            ['provenance', Database, 'Sources and licensing'],
+            ['team', UsersIcon, 'Team'],
+          ] as const).map(([value, Icon, label]) => (
+            <TabsTrigger key={value} value={value} className="inline-flex items-center gap-1.5">
+              <Icon className="h-3.5 w-3.5" aria-hidden />{label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value="interpretation" className="space-y-5">
-          <Prose>
-            <h3>What kind of evidence this is</h3>
-            <p>
-              Everything in this atlas is <strong>descriptive</strong>: it reports published
-              figures by place and period, with the uncertainty the publisher supplied. The
-              distinction between four different kinds of claim matters, and this product
-              only makes the first.
+        {/* ------------------------------------------------- interpretation */}
+        <TabsContent value="interpretation" className="space-y-8">
+          <section>
+            <SectionTitle icon={Eye}>What kind of evidence this is</SectionTitle>
+            <p className="sr-only">
+              Everything in this atlas is descriptive: it reports published figures by place
+              and period, with the uncertainty the publisher supplied. Of four kinds of claim,
+              this product makes only the first.
             </p>
             <Ladder />
-            <h3>Four distinct reasons an area may have no colour</h3>
-            <p>
-              A blank area on a choropleth is the most commonly misread element of a map
-              like this. The atlas keeps four states apart and styles each differently,
-              and a value of <strong>zero</strong> is none of them — zero is a real value
-              and is coloured on the scale.
+          </section>
+
+          <section>
+            <SectionTitle icon={CircleDashed}>Four distinct reasons an area may have no colour</SectionTitle>
+            <p className="sr-only">
+              A blank area on a choropleth is the most commonly misread element of a map like
+              this. The atlas keeps four states apart and styles each differently, and a value
+              of zero is none of them — zero is a real value and is coloured on the scale.
             </p>
-            <ul>
-              <li>
-                <strong>No value published.</strong> The geography exists and is in the
-                dataset, but no figure was supplied for this area and period.
-              </li>
-              <li>
-                <strong>Suppressed.</strong> The publisher withheld the value, usually to
-                protect small numbers. A suppressed area is not a low area.
-              </li>
-              <li>
-                <strong>Not covered by this dataset.</strong> Scotland, Wales and Northern
-                Ireland appear on the administrative map for navigation, but the source is
-                England-only. These are coverage gaps, not low values, and no UK benchmark
-                is computed anywhere in this product.
-              </li>
-              <li>
-                <strong>Not applicable.</strong> The geography type does not exist in that
-                nation at all.
-              </li>
+            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+              {[
+                { swatch: 'missing' as const, title: 'No value published', body: 'The geography is in the dataset, but no figure was supplied for this area and period.' },
+                { swatch: 'suppressed' as const, title: 'Suppressed', body: 'The publisher withheld the value, usually to protect small numbers. A suppressed area is not a low area.' },
+                { swatch: 'outsideCoverage' as const, title: 'Not covered by this dataset', body: 'Scotland, Wales and Northern Ireland are on the map for navigation, but the source is England-only. Coverage gaps, not low values; no UK benchmark is computed.' },
+                { swatch: 'notApplicable' as const, title: 'Not applicable', body: 'The geography type does not exist in that nation at all.' },
+                { swatch: 'zero' as const, title: 'Zero is a value', body: 'A published zero is a measurement, coloured on the scale like any other value.' },
+              ].map((state, index) => (
+                <Reveal as="li" key={state.title} delay={index * 70} className="rounded-xl border border-slate-200 bg-white p-3">
+                  <StateSwatch kind={state.swatch} />
+                  <p className="mt-2 text-sm font-semibold text-oxford-900">{state.title}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{state.body}</p>
+                </Reveal>
+              ))}
             </ul>
-            <h3>Recorded prevalence is not disease prevalence</h3>
-            <p>
-              Several indicators here are QOF register prevalences. A higher recorded
-              prevalence can mean better case-finding and coding rather than more disease,
-              and a lower one can mean under-diagnosis. For those indicators the atlas
-              refuses to repeat a “better” or “worse” reading even when the publisher
-              supplies the flag, and says why.
-            </p>
-            <h3>Magnitude and evidence are separate</h3>
-            <p>
-              The size of a difference and the strength of evidence for it are different
-              quantities. A large difference with a wide interval and a small difference
-              with a narrow interval are not the same finding, and the atlas reports both
-              rather than collapsing them into a single verdict.
-            </p>
-            <h3>Rankings are not league tables</h3>
-            <p>
-              Ordering areas by value is useful for finding the ends of a distribution. It
-              is not a performance ranking: adjacent areas are usually statistically
-              indistinguishable, and these measures reflect need, access, case-finding and
-              coding as well as any notion of performance.
-            </p>
-          </Prose>
+          </section>
+
+          <section>
+            <SectionTitle icon={ShieldCheck}>Reading rules</SectionTitle>
+            <RuleGrid
+              columns={3}
+              rules={[
+                {
+                  icon: ClipboardList, tone: 'amber',
+                  title: 'Recorded prevalence is not disease prevalence',
+                  body: 'Several indicators are QOF register prevalences. A higher recorded prevalence can mean better case-finding and coding rather than more disease, and a lower one can mean under-diagnosis. For those, the atlas refuses to repeat a “better” or “worse” reading even when the publisher supplies the flag, and says why.',
+                },
+                {
+                  icon: Scale,
+                  title: 'Magnitude and evidence are separate',
+                  body: 'The size of a difference and the strength of evidence for it are different quantities. A large difference with a wide interval and a small difference with a narrow interval are not the same finding; the atlas reports both rather than one verdict.',
+                },
+                {
+                  icon: ListOrdered,
+                  title: 'Rankings are not league tables',
+                  body: 'Ordering areas by value is useful for finding the ends of a distribution. It is not a performance ranking: adjacent areas are usually statistically indistinguishable, and these measures reflect need, access, case-finding and coding as well as any notion of performance.',
+                },
+              ]}
+            />
+          </section>
         </TabsContent>
 
+        {/* ----------------------------------------------------- indicators */}
         <TabsContent value="indicators">
           <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
-            <nav aria-label="Indicators">
+            <nav aria-label="Indicators" className="scrollbar-thin max-h-[70vh] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1">
               <ul className="space-y-0.5">
                 {indicators.map((item) => (
                   <li key={item.id}>
@@ -106,15 +143,16 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
                       type="button"
                       onClick={() => setSelectedId(item.id)}
                       aria-current={item.id === selectedId ? 'true' : undefined}
-                      className={`w-full border-l-2 px-2.5 py-1.5 text-left text-xs leading-snug transition-colors
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700 ${
-                          item.id === selectedId
-                            ? 'border-brass-700 bg-accent font-medium text-oxford-900'
-                            : 'border-transparent text-slate-600 hover:bg-slate-50'
-                        }`}
+                      className={cn(
+                        'w-full rounded-lg px-2.5 py-1.5 text-left text-xs leading-snug transition-colors',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700',
+                        item.id === selectedId
+                          ? 'bg-oxford-800 font-medium text-white'
+                          : 'text-slate-700 hover:bg-slate-50',
+                      )}
                     >
                       {item.shortName}
-                      <span className="mt-0.5 block font-figure text-2xs text-slate-500">
+                      <span className={cn('mt-0.5 block font-figure text-2xs', item.id === selectedId ? 'text-oxford-200' : 'text-slate-500')}>
                         {item.domainLabel} · ID {item.id}
                       </span>
                     </button>
@@ -124,9 +162,9 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
             </nav>
 
             {indicator ? (
-              <article className="min-w-0 space-y-4">
-                <header>
-                  <h3 className="text-base font-semibold leading-snug text-oxford-900">
+              <article key={indicator.id} className="min-w-0 space-y-4">
+                <Reveal as="header">
+                  <h3 className="text-lg font-semibold leading-snug text-oxford-900">
                     {indicator.name}
                   </h3>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -138,70 +176,61 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
                       <Badge tone="warn">not interpretable as better/worse</Badge>
                     ) : null}
                   </div>
-                </header>
+                </Reveal>
 
-                <dl className="space-y-3">
-                  <Field label="Definition" value={indicator.definition} />
-                  <Field label="Rationale" value={indicator.rationale} />
+                <section>
+                  <h4 className="label-caps mb-2">Where this indicator is published</h4>
+                  <ul className="grid gap-2 sm:grid-cols-3">
+                    {Object.values(indicator.geographies).map((geography) => {
+                      const share = geography.areaCount > 0 ? geography.areasWithValue / geography.areaCount : 0;
+                      return (
+                        <li key={geography.areaTypeKey} className="rounded-xl border border-slate-200 bg-white p-3">
+                          <p className="text-sm font-semibold text-oxford-900">{geography.label}</p>
+                          <p className="font-figure text-2xs text-slate-500">{geography.boundaryVintage} boundaries</p>
+                          <div className="mt-2 flex items-baseline gap-1">
+                            <span className="text-xl font-semibold tabular-nums text-oxford-900">{geography.areasWithValue}</span>
+                            <span className="font-figure text-2xs text-slate-500">of {geography.areaCount} with a value</span>
+                          </div>
+                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                            <div className="grow-x h-full rounded-full bg-oxford-600" style={{ width: `${share * 100}%` }} />
+                          </div>
+                          <dl className="mt-2 grid grid-cols-2 gap-x-2 gap-y-0.5 font-figure text-2xs">
+                            <dt className="text-slate-500">Latest</dt><dd className="text-slate-700">{geography.latestPeriod}</dd>
+                            <dt className="text-slate-500">Periods</dt>
+                            <dd className="text-slate-700">
+                              {geography.periodSeries.map((series) => `${series.periodCount} ${series.label.toLowerCase()}`).join(', ')}
+                            </dd>
+                            <dt className="text-slate-500">Intervals</dt>
+                            <dd className="text-slate-700">{geography.hasConfidenceIntervals ? '95% and 99.8%' : 'none published'}</dd>
+                            <dt className="text-slate-500">Suppressed</dt><dd className="tabular-nums text-slate-700">{geography.suppressedCount}</dd>
+                          </dl>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {Object.values(indicator.geographies).some((g) => g.mixesPooledAndSingleYear) ? (
+                    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-2xs text-amber-900">
+                      <Layers className="h-3.5 w-3.5" aria-hidden />
+                      Pooled and single-year periods share this ID. They are held as separate series and never plotted on one line.
+                    </p>
+                  ) : null}
+                </section>
+
+                <dl className="grid gap-2 md:grid-cols-2">
+                  <Field label="Definition" value={indicator.definition} wide />
+                  <Field label="Rationale" value={indicator.rationale} wide />
                   <Field label="Numerator" value={indicator.numeratorDefinition} />
                   <Field label="Numerator source" value={indicator.numeratorSource} />
                   <Field label="Denominator" value={indicator.denominatorDefinition} />
                   <Field label="Denominator source" value={indicator.denominatorSource} />
-                  <Field label="Method" value={indicator.methodology} />
+                  <Field label="Method" value={indicator.methodology} wide />
                   <Field label="Standard population" value={indicator.standardPopulation} />
                   <Field label="Confidence interval method" value={indicator.confidenceIntervalMethod} />
-                  <Field label="Disclosure control" value={indicator.disclosureControl} />
-                  <Field label="Caveats and comparability" value={indicator.caveats} />
-                  <Field label="Data quality note" value={indicator.dataQualityNote} />
+                  <Field label="Disclosure control" value={indicator.disclosureControl} wide />
+                  <Field label="Caveats and comparability" value={indicator.caveats} wide />
+                  <Field label="Data quality note" value={indicator.dataQualityNote} wide />
                   <Field label="Copyright" value={indicator.copyright} />
                 </dl>
-
-                <section>
-                  <h4 className="label-caps mb-1.5">Where this indicator is published</h4>
-                  <table className="w-full border-collapse font-figure text-2xs">
-                    <thead>
-                      <tr className="border-b border-slate-300 text-left">
-                        <th scope="col" className="py-1 pr-2 font-semibold text-slate-600">Geography</th>
-                        <th scope="col" className="py-1 pr-2 font-semibold text-slate-600">Boundaries</th>
-                        <th scope="col" className="py-1 pr-2 font-semibold text-slate-600">Periods</th>
-                        <th scope="col" className="py-1 pr-2 font-semibold text-slate-600">Latest</th>
-                        <th scope="col" className="py-1 pr-2 font-semibold text-slate-600">Areas with a value</th>
-                        <th scope="col" className="py-1 pr-2 font-semibold text-slate-600">Intervals</th>
-                        <th scope="col" className="py-1 font-semibold text-slate-600">Suppressed</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.values(indicator.geographies).map((geography) => (
-                        <tr key={geography.areaTypeKey} className="border-b border-slate-100">
-                          <td className="py-1 pr-2 text-oxford-900">{geography.label}</td>
-                          <td className="py-1 pr-2 text-slate-600">{geography.boundaryVintage}</td>
-                          <td className="py-1 pr-2 tabular-nums text-slate-600">
-                            {geography.periodSeries
-                              .map((series) => `${series.periodCount} ${series.label.toLowerCase()}`)
-                              .join(', ')}
-                          </td>
-                          <td className="py-1 pr-2 text-slate-600">{geography.latestPeriod}</td>
-                          <td className="py-1 pr-2 tabular-nums text-slate-600">
-                            {geography.areasWithValue} of {geography.areaCount}
-                          </td>
-                          <td className="py-1 pr-2 text-slate-600">
-                            {geography.hasConfidenceIntervals ? '95% and 99.8%' : 'none published'}
-                          </td>
-                          <td className="py-1 tabular-nums text-slate-600">
-                            {geography.suppressedCount}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {Object.values(indicator.geographies).some((g) => g.mixesPooledAndSingleYear) ? (
-                    <p className="mt-2 text-2xs leading-relaxed text-amber-800">
-                      This indicator publishes both pooled multi-year and single-year
-                      periods under one indicator ID. They are held as separate series
-                      here and are never plotted on one line.
-                    </p>
-                  ) : null}
-                </section>
 
                 {indicator.sourceLink ? (
                   <p className="font-figure text-2xs">
@@ -220,44 +249,39 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
           </div>
         </TabsContent>
 
-        <TabsContent value="geography" className="space-y-5">
-          <Prose>
-            <h3>Two separate geographies, with no hierarchy between them</h3>
-            <p>
-              The atlas offers an administrative geography and an NHS geography. They are
-              <strong> not</strong> levels of one tree. An integrated care board is not
-              inside a local authority and a local authority is not inside an ICB: they
-              are overlapping partitions of England whose only shared ancestor is the
-              nation. The data model has no edge between them, and a comparison cannot mix
-              them.
+        {/* ------------------------------------------------------- geography */}
+        <TabsContent value="geography" className="space-y-8">
+          <section>
+            <SectionTitle icon={Link2Off}>Two separate geographies, with no hierarchy between them</SectionTitle>
+            <GeographyTrees />
+            <p className="sr-only">
+              The atlas offers an administrative geography and an NHS geography. They are not
+              levels of one tree. An integrated care board is not inside a local authority and
+              a local authority is not inside an ICB: they are overlapping partitions of
+              England whose only shared ancestor is the nation.
             </p>
-            <h3>England’s upper tier is not uniform</h3>
-            <p>
-              The administrative level shown is counties and unitary authorities. In
-              England these are genuinely mixed: county councils, metropolitan districts,
-              London boroughs and unitary authorities all sit at this tier as siblings.
-              The atlas represents that as it is rather than imposing a uniform grid, and
-              the area counts come from the live source rather than from a remembered
-              figure.
-            </p>
-            <h3>A city is not an administrative area</h3>
-            <p>
-              Searching for a settlement resolves to the administrative area that contains
-              it, and the interface says so explicitly — “this is not a city-only
-              estimate”. Settlement boundaries and authority boundaries are never treated
-              as equivalent.
-            </p>
-            <h3>Boundary vintages are matched to the data, not assumed</h3>
-            <p>
-              Boundary layers were chosen by comparing their code sets against the
-              publisher’s own area register. Two cases mattered: both the April 2023 and
-              July 2022 ICB releases contain 42 ICBs, and both NHS region releases contain
-              seven regions, but some codes were reissued between them. Matching on count
-              alone would have produced a silently broken join, so the vintage whose codes
-              match exactly is used and recorded.
-            </p>
-          </Prose>
-          <div className="overflow-auto border border-slate-200">
+          </section>
+          <RuleGrid
+            columns={3}
+            rules={[
+              {
+                icon: Building2,
+                title: 'England’s upper tier is not uniform',
+                body: 'Counties and unitary authorities are genuinely mixed: county councils, metropolitan districts, London boroughs and unitary authorities sit at this tier as siblings. The atlas shows that as it is, with area counts from the live source.',
+              },
+              {
+                icon: Search,
+                title: 'A city is not an administrative area',
+                body: 'Searching for a settlement resolves to the administrative area that contains it, and the interface says so — “this is not a city-only estimate”. Settlement and authority boundaries are never treated as equivalent.',
+              },
+              {
+                icon: Fingerprint,
+                title: 'Boundary vintages are matched to the data, not assumed',
+                body: 'Layers were chosen by comparing their code sets with the publisher’s area register. Two ICB and two NHS region releases have the same counts but reissued codes, so matching on count alone would silently break the join. The vintage whose codes match exactly is used and recorded.',
+              },
+            ]}
+          />
+          <div className="overflow-auto rounded-xl border border-slate-200">
             <table className="w-full border-collapse font-figure text-2xs">
               <caption className="sr-only">Geography levels and their boundary sources</caption>
               <thead>
@@ -290,170 +314,84 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
           </div>
         </TabsContent>
 
-        <TabsContent value="statistics" className="space-y-5">
-          <Prose>
-            <h3>Rates, counts and standardisation</h3>
-            <ul>
-              <li>
-                Burden is compared using the rate the publisher supplies. Counts are shown
-                separately in the detail panel and the table, and are never mapped as
-                burden.
-              </li>
-              <li>
-                Age-standardised rates are never averaged to produce a national figure.
-                The England benchmark is the publisher’s own England row, not a mean of
-                local values.
-              </li>
-              <li>
-                Where a measure is a crude rate, the atlas says so, and the evidence
-                statement notes that differences in age structure between areas are not
-                adjusted for.
-              </li>
-            </ul>
-            <h3>Uncertainty</h3>
-            <ul>
-              <li>
-                Confidence intervals are reproduced exactly as published, at both 95% and
-                99.8% where supplied. No interval is ever derived from a rate.
-              </li>
-              <li>
-                Significance against England uses the publisher’s own flag. The atlas does
-                not compute its own significance test.
-              </li>
-              <li>
-                Overlapping intervals are shown and described, but overlap is{' '}
-                <strong>not</strong> treated as a significance test, and non-overlap is
-                not treated as proof of a difference. Both appear as descriptions of the
-                intervals.
-              </li>
-            </ul>
-            <h3>Map classification</h3>
-            <ul>
-              <li>
-                The default is a five-class quantile classification, computed only from
-                areas that carry a value. The breakpoints, unit and method are printed on
-                the legend and in every export.
-              </li>
-              <li>
-                The quantile uses linear interpolation between order statistics, so the
-                breakpoints can be reproduced from the published values alone.
-              </li>
-              <li>
-                When comparing periods, the scale can be locked: class breaks are then
-                computed once across the whole series, and the figure says that the scale
-                is fixed. Rescaling is always explicit — colours never change meaning
-                silently.
-              </li>
-              <li>
-                Selection is shown by outline only. Selecting an area never changes what
-                the fill legend means.
-              </li>
-              <li>
-                Palettes are single-hue sequential or brass-to-purple diverging, with no
-                red/green opposition, and non-data areas are styled outside the value
-                ramp entirely.
-              </li>
-            </ul>
-            <h3>Time</h3>
-            <ul>
-              <li>
-                Rolling multi-year pooled periods are held as a separate series from
-                single-year periods and are never plotted as independent annual
-                observations. Several indicators in this release publish both under one
-                indicator ID.
-              </li>
-              <li>
-                Financial and calendar years are kept distinct and labelled.
-              </li>
-              <li>
-                A change between two periods is described as a difference between two
-                points, never as an established trend. Where the publisher supplies its
-                own trend assessment over the full series, that is quoted as theirs.
-              </li>
-              <li>
-                Gaps in a time series are drawn as gaps. Nothing is interpolated across a
-                period with no published value.
-              </li>
-            </ul>
-            <h3>Comparisons that are blocked</h3>
-            <p>
-              A comparison requires the same geography, boundary vintage, period, period
-              pooling and population subgroup. When any of these differ the comparison is
-              refused and the reason is stated, rather than a number being produced that
-              looks valid.
-            </p>
-            <h3>Ecological inference</h3>
-            <p>
-              The scatter view plots two area-level measures. It carries no fitted line and
-              no correlation statistic, because neither would be interpretable as an
-              exposure–outcome effect, and it states that an association between areas
-              says nothing about individuals.
-            </p>
-          </Prose>
+        {/* ------------------------------------------------------ statistics */}
+        <TabsContent value="statistics" className="space-y-7">
+          <RuleSection icon={Ruler} title="Rates, counts and standardisation" rules={[
+            { icon: Ruler, title: 'Rates, not counts, for burden', body: 'Burden is compared using the rate the publisher supplies. Counts are shown separately in the detail panel and the table, and are never mapped as burden.' },
+            { icon: Ban, title: 'No home-made national figure', body: 'Age-standardised rates are never averaged to produce a national figure. The England benchmark is the publisher’s own England row, not a mean of local values.' },
+            { icon: Users2Icon, title: 'Crude rates say so', body: 'Where a measure is a crude rate, the atlas says so, and the evidence statement notes that differences in age structure between areas are not adjusted for.' },
+          ]} />
+          <RuleSection icon={MoveHorizontal} title="Uncertainty" rules={[
+            { icon: MoveHorizontal, title: 'Intervals as published', body: 'Confidence intervals are reproduced exactly as published, at both 95% and 99.8% where supplied. No interval is ever derived from a rate.' },
+            { icon: Sigma, title: 'The publisher’s flag, at its own level', body: 'Significance against England uses the publisher’s own flag; the atlas computes no test of its own. The interval drawn beside the flag is the one the flag follows — 99.8% for hypertension, depression and asthma prevalence, 95% elsewhere — read from the data.' },
+            { icon: Scale, title: 'Overlap is not a test', body: <>Overlapping intervals are shown and described, but overlap is <strong>not</strong> treated as a significance test, and non-overlap is not treated as proof of a difference. Both appear as descriptions of the intervals.</> },
+          ]} />
+          <RuleSection icon={Palette} title="Map classification" rules={[
+            { icon: ListOrdered, title: 'Five quantile classes by default', body: 'Computed only from areas that carry a value. Breakpoints, unit and method are printed on the legend and in every export. Quantiles use linear interpolation between order statistics, so breaks can be reproduced from the published values alone.' },
+            { icon: Lock, title: 'Scales change only when you say', body: 'When comparing periods the scale can be locked: breaks are computed once across the whole series and the figure says the scale is fixed. Colours never change meaning silently.' },
+            { icon: Palette, title: 'Colour-safe, outline for selection', body: 'Single-hue sequential or brass-to-Oxford-blue diverging palettes, with no red/green opposition. Non-data areas sit outside the value ramp. Selection is shown by outline only and never changes what a fill means.' },
+          ]} />
+          <RuleSection icon={CalendarRange} title="Time" rules={[
+            { icon: Layers, title: 'Pooled periods stay pooled', body: 'Rolling multi-year pooled periods are held as a separate series from single-year periods and are never plotted as independent annual observations. Several indicators publish both under one ID. Change is measured against the latest period sharing no years with the current one.' },
+            { icon: CalendarRange, title: 'Year types kept apart', body: 'Financial and calendar years are kept distinct and labelled.' },
+            { icon: Sigma, title: 'Two points are not a trend', body: 'A change between two periods is described as a difference between two points, never as an established trend. The publisher’s own trend assessment, which Fingertips bases on the most recent points of the series, is quoted as theirs.' },
+            { icon: CircleDashed, title: 'Gaps are gaps', body: 'Gaps in a time series are drawn as gaps. Nothing is interpolated across a period with no published value.' },
+          ]} />
+          <RuleSection icon={Ban} title="Comparisons that are blocked" rules={[
+            { icon: Ban, title: 'Like with like, or not at all', body: 'A comparison requires the same geography, boundary vintage, period, period pooling and population subgroup. When any differ the comparison is refused and the reason stated, rather than a number being produced that looks valid.' },
+            { icon: Unlink, title: 'Ecological inference', body: 'The scatter view plots two area-level measures with no fitted line and no correlation statistic, because neither would be interpretable as an exposure–outcome effect. An association between areas says nothing about individuals.' },
+          ]} />
         </TabsContent>
 
-        <TabsContent value="provenance" className="space-y-5">
-          <Prose>
-            <h3>Sources</h3>
-            <p>
-              Observations come from {manifest.sourceProfiles.length} profiles published
-              by {manifest.licences.observations.publisher} through Fingertips.
-              Boundaries come from the {manifest.licences.boundaries.publisher}. The
-              dataset bundled with this build was prepared on{' '}
+        {/* ------------------------------------------------------ provenance */}
+        <TabsContent value="provenance" className="space-y-7">
+          <section>
+            <SectionTitle icon={Database}>Sources</SectionTitle>
+            <p className="mb-3 text-sm text-slate-700">
+              {manifest.sourceProfiles.length} profiles from {manifest.licences.observations.publisher} via
+              Fingertips; boundaries from the {manifest.licences.boundaries.publisher}. Prepared{' '}
               {formatDate(manifest.generatedAt)}.
             </p>
-            <ul>
-              {manifest.sourceProfiles.map((source) => (
-                <li key={source.id}>
-                  <strong>{source.name}</strong> — profile {source.id} (“{source.key}”)
-                </li>
+            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+              {manifest.sourceProfiles.map((source, index) => (
+                <Reveal as="li" key={source.id} delay={index * 60} className="rounded-xl border border-slate-200 bg-white p-3">
+                  <span className="font-figure text-2xs text-brass-700">Profile {source.id}</span>
+                  <p className="mt-0.5 text-sm font-semibold leading-snug text-oxford-900">{source.name}</p>
+                  <p className="font-figure text-2xs text-slate-500">“{source.key}”</p>
+                </Reveal>
               ))}
             </ul>
-            <p>
-              An indicator is attributed to the profile it was retrieved through. Several
-              measures appear in more than one Fingertips profile; the figures are the
-              same, and the profile recorded here is the one this pipeline used.
+            <p className="mt-2 text-xs text-slate-500">
+              Measures appearing in several profiles carry the same figures; the profile recorded is the one this pipeline used.
             </p>
-            <h3>Licensing and attribution</h3>
-            <p>{manifest.licences.observations.attribution}</p>
-            <p>{manifest.licences.boundaries.attribution}</p>
-            <p>
-              Interactive maps are rendered with amCharts 5 under its free licence. That
-              licence requires the amCharts attribution link to remain visible on the
-              chart; it is present and has not been removed, and no licence key has been
-              inserted. Exported figures are produced by this application’s own SVG
-              renderer and are not subject to that requirement.
-            </p>
-            <h3>Independence and endorsement</h3>
-            <p>
-              This is an independent working research tool, built and maintained by the
-              team named under <strong>Team</strong>. Their institutional affiliations
-              identify them and their background; they do not mean that any institution
-              has reviewed, endorsed, funded or approved this atlas or the analyses
-              produced with it.
-            </p>
-            <p>
-              It carries no endorsement from the NHS, the Office for Health Improvement
-              and Disparities, or the Office for National Statistics. Published figures
-              and their definitions belong to their publishers; the interpretation
-              framework here is the application’s own, and any error in it is the
-              application’s, not the publisher’s.
-            </p>
-            <h3>Local storage</h3>
-            <p>
-              Preferences and saved figure settings are stored in this browser only. They
-              are not synchronised between users or devices, and are not sent anywhere.
-              Use the shareable URL to give someone else the same view.
-            </p>
-            <h3>Reproducibility</h3>
-            <p>
-              Every analytical choice is encoded in the URL, and every figure can be
-              downloaded with a JSON specification recording the indicator, geography,
-              period, benchmark, classification breakpoints, source and retrieval date.
-              The data-preparation and validation scripts in the repository regenerate the
-              bundled dataset from the sources above.
-            </p>
-          </Prose>
+          </section>
+          <RuleGrid
+            rules={[
+              {
+                icon: ScrollText, title: 'Licensing and attribution',
+                body: (
+                  <>
+                    {manifest.licences.observations.attribution}{' '}
+                    {manifest.licences.boundaries.attribution} Interactive maps use amCharts 5 under its
+                    free licence, whose attribution link stays visible on the map; no licence key is
+                    inserted. Exported figures come from this application’s own SVG renderer.
+                  </>
+                ),
+              },
+              {
+                icon: ShieldCheck, title: 'Independence and endorsement',
+                body: 'An independent research tool, built by the team named under Team. Affiliations identify them; no institution has reviewed, endorsed, funded or approved it. No endorsement from the NHS, OHID or ONS. Figures belong to their publishers; any error in the interpretation framework is the application’s.',
+              },
+              {
+                icon: HardDrive, title: 'Local storage',
+                body: 'Preferences and saved figure settings stay in this browser only. They are not synchronised or sent anywhere. Share the URL to give someone the same view.',
+              },
+              {
+                icon: FileJson, title: 'Reproducibility',
+                body: 'Every analytical choice is in the URL, and every figure downloads with a JSON specification: indicator, geography, period, benchmark, class breaks, source and retrieval date. The repository’s scripts regenerate the dataset from source.',
+              },
+            ]}
+          />
         </TabsContent>
         <TabsContent value="team">
           <TeamSection />
@@ -463,23 +401,31 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
   );
 }
 
-function Prose({ children }: { children: React.ReactNode }) {
+const Users2Icon = UsersIcon;
+
+function SectionTitle({ icon: Icon, children }: { icon: typeof Eye; children: React.ReactNode }) {
   return (
-    <div
-      className="max-w-3xl space-y-3 text-sm leading-relaxed text-slate-700
-                 [&_h3]:mt-5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-oxford-900
-                 [&_li]:leading-relaxed [&_strong]:font-semibold [&_strong]:text-oxford-900
-                 [&_ul]:list-outside [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5"
-    >
-      {children}
-    </div>
+    <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-oxford-900">
+      <Icon className="h-4 w-4 text-brass-600" aria-hidden />{children}
+    </h3>
   );
 }
 
-function Field({ label, value }: { label: string; value: string | null }) {
+function RuleSection({ icon, title, rules }: {
+  icon: typeof Eye; title: string; rules: Parameters<typeof RuleGrid>[0]['rules'];
+}) {
+  return (
+    <section>
+      <SectionTitle icon={icon}>{title}</SectionTitle>
+      <RuleGrid rules={rules} columns={rules.length >= 3 ? 3 : 2} />
+    </section>
+  );
+}
+
+function Field({ label, value, wide = false }: { label: string; value: string | null; wide?: boolean }) {
   if (!value) return null;
   return (
-    <div>
+    <div className={cn('rounded-xl border border-slate-200 bg-white p-3', wide && 'md:col-span-2')}>
       <dt className="label-caps">{label}</dt>
       <dd className="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-700">
         {value}
@@ -488,7 +434,26 @@ function Field({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-/** The claim ladder: what this product supports and what it does not. */
+/** Swatches drawn with the map's own non-data styles, so the key matches the map. */
+function StateSwatch({ kind }: { kind: 'missing' | 'suppressed' | 'outsideCoverage' | 'notApplicable' | 'zero' }) {
+  if (kind === 'zero') {
+    return (
+      <span className="flex h-10 items-center justify-center rounded-lg text-lg font-bold text-oxford-900" style={{ background: SEQUENTIAL_OXFORD[0] }}>
+        0
+      </span>
+    );
+  }
+  const style = NON_DATA_STYLES[kind];
+  const pattern =
+    style.pattern === 'hatch'
+      ? `repeating-linear-gradient(90deg, ${style.stroke} 0 1px, ${style.fill} 1px 4px)`
+      : style.pattern === 'diagonal'
+        ? `repeating-linear-gradient(45deg, ${style.stroke} 0 1px, ${style.fill} 1px 5px)`
+        : style.fill;
+  return <span aria-hidden className="block h-10 rounded-lg border" style={{ background: pattern, borderColor: style.stroke }} />;
+}
+
+/** The claim ladder as a staircase: only the first step is supported here. */
 function Ladder() {
   const rungs: { label: string; supported: boolean; body: string }[] = [
     {
@@ -509,27 +474,75 @@ function Ladder() {
     {
       label: 'Causal evidence',
       supported: false,
-      body: 'X causes Y, or changing X would change Y. Nothing in this atlas can support this. It requires evidence of effect from study designs this product does not contain.',
+      body: 'X causes Y, or changing X would change Y. Nothing in this atlas can support this; it needs evidence of effect from study designs this product does not contain.',
     },
   ];
   return (
-    <ul className="not-prose my-4 space-y-2">
-      {rungs.map((rung) => (
-        <li
-          key={rung.label}
-          className={`border-l-2 pl-3 ${
-            rung.supported ? 'border-brass-600' : 'border-amber-500'
-          }`}
+    <ol className="grid items-end gap-2 sm:grid-cols-4">
+      {rungs.map((rung, index) => (
+        <Reveal as="li" key={rung.label} delay={index * 120}
+          className={cn(
+            'flex flex-col rounded-xl border p-3',
+            rung.supported
+              ? 'border-brass-400 bg-gradient-to-b from-brass-50 to-white shadow-md'
+              : 'border-dashed border-slate-300 bg-slate-50/60',
+          )}
+          style={{ minHeight: `${7 + index * 2.2}rem` }}
         >
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-oxford-900">{rung.label}</span>
-            <Badge tone={rung.supported ? 'brass' : 'warn'}>
-              {rung.supported ? 'supported here' : 'not supported here'}
-            </Badge>
-          </div>
-          <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{rung.body}</p>
-        </li>
+          <span className={cn(
+            'flex h-7 w-7 items-center justify-center rounded-full',
+            rung.supported ? 'bg-brass-600 text-white' : 'bg-slate-200 text-slate-500',
+          )}>
+            {rung.supported ? <Check className="h-4 w-4" aria-hidden /> : <X className="h-4 w-4" aria-hidden />}
+          </span>
+          <span className="mt-2 text-sm font-semibold text-oxford-900">{rung.label}</span>
+          <Badge tone={rung.supported ? 'brass' : 'warn'} className="mt-1 w-fit">
+            {rung.supported ? 'supported here' : 'not supported here'}
+          </Badge>
+          <span className="mt-1.5 text-xs leading-relaxed text-slate-600">{rung.body}</span>
+        </Reveal>
       ))}
-    </ul>
+    </ol>
+  );
+}
+
+/** Administrative and NHS geographies as two trees that share only the nation. */
+function GeographyTrees() {
+  const node = 'rounded-lg border px-3 py-1.5 text-center text-xs font-semibold';
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="mx-auto flex w-fit flex-col items-center">
+        <span className={cn(node, 'border-oxford-800 bg-oxford-800 text-white')}>
+          <MapPinned className="mr-1 inline h-3.5 w-3.5" aria-hidden />England
+        </span>
+      </div>
+      {/* Connector to the centre of each column, whatever the width. */}
+      <div aria-hidden className="relative h-8">
+        <span className="absolute left-1/2 top-0 h-4 w-px bg-oxford-300" />
+        <span className="absolute left-1/4 right-1/4 top-4 h-px bg-oxford-300" />
+        <span className="absolute left-1/4 top-4 h-4 w-px bg-oxford-300" />
+        <span className="absolute right-1/4 top-4 h-4 w-px bg-oxford-300" />
+      </div>
+      <div className="grid grid-cols-2">
+        <div className="flex flex-col items-center gap-2">
+          <span className="label-caps text-oxford-700">Administrative</span>
+          <span className={cn(node, 'border-oxford-300 bg-oxford-50 text-oxford-900')}>
+            <Building2 className="mr-1 inline h-3.5 w-3.5" aria-hidden />Counties and unitary authorities
+          </span>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <span className="label-caps text-oxford-700">NHS</span>
+          <span className={cn(node, 'border-oxford-300 bg-oxford-50 text-oxford-900')}>NHS England regions</span>
+          <span aria-hidden className="h-3 w-px bg-oxford-300" />
+          <span className={cn(node, 'border-oxford-300 bg-oxford-50 text-oxford-900')}>
+            <Hospital className="mr-1 inline h-3.5 w-3.5" aria-hidden />Integrated care boards
+          </span>
+        </div>
+      </div>
+      <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs font-semibold text-brass-800">
+        <Link2Off className="h-4 w-4" aria-hidden />
+        No link between the two trees: an ICB is not inside a council, and a council is not inside an ICB
+      </p>
+    </div>
   );
 }
