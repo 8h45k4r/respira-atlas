@@ -20,6 +20,25 @@ reports itself **unavailable with a reason** instead of rendering around a hole.
 That guard is real, not theoretical: the life-expectancy story checks that the
 measure still has no combined series, and withdraws itself if one ever appears.
 
+## How a story is shown
+
+A story reads as a flow, not an essay. Each step leads with a **graphic built in
+the same `build()` call, from the same computed values, as its prose**, so words
+and picture cannot disagree:
+
+| Graphic | Used for |
+|---|---|
+| Range bar | Lowest, median and highest, with the ratio between the ends |
+| Waffle | One square per area: the publisher's flags, or data availability |
+| Count-up callouts | One to three numbers that matter |
+| Is / is-not cards | What the evidence shows, and what it does not |
+
+A sticky tracker shows which step the reader is on. The prose and full notes sit
+behind "Read the explanation" — visually hidden, not removed, so screen readers,
+print and the smoke tests still read them. "What this does not establish" and
+"what to look at next" are icon cards. The story index is a card grid, each card
+with a small illustration of the story's idea.
+
 ## The four stories
 
 ### 1. A wide range, and mostly no difference

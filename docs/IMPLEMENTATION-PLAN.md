@@ -3,6 +3,13 @@
 Written before implementation, after live inspection of every external source named below.
 Date of verification: 2026-10-18.
 
+> **Historical record.** This is the plan as written before the build. Two things
+> changed during it, and [DATA.md](DATA.md) is the current reference:
+> the release grew from the respiratory profile alone to **35 indicators from 5
+> profiles**, and the ICB and NHS region layers named below (April 2023 and
+> January 2024) were **replaced by the July 2022 vintages**, because their codes,
+> not their counts, failed to match the publisher's register.
+
 ## 1. What was actually verified (not assumed)
 
 ### Fingertips API
@@ -40,8 +47,8 @@ Host: `services1.arcgis.com/ESMARspQHYMw9BZ9`. GeoJSON with `f=geojson&outSR=432
 |---|---|---|---|
 | UK nations | `Countries_December_2025_Boundaries_UK_BUC` | 4 | E92/W92/S92/N92 |
 | Counties & UAs (UK) | `Counties_and_Unitary_Authorities_May_2023_UK_BUC` | **218** | England 153 (E06:63, E08:36, E09:33, E10:21) + Wales 22 + Scotland 32 + NI 11 |
-| ICBs | `Integrated_Care_Boards_April_2023_EN_BGC` | **42** | Fingertips area type 221 returns **42** areas — exact match |
-| NHS England regions | `NHS_England_Regions_January_2024_EN_BGC` | **7** | Fingertips area type 223 returns **7** areas — exact match |
+| ICBs | `Integrated_Care_Boards_April_2023_EN_BGC` *(later replaced by July 2022, see DATA.md)* | **42** | Count matches area type 221; two codes do not |
+| NHS England regions | `NHS_England_Regions_January_2024_EN_BGC` *(later replaced by July 2022, see DATA.md)* | **7** | Count matches area type 223; two codes do not |
 
 The English upper-tier count was taken from the live API (`/api/areas/by_area_type?area_type_id=502` → 153), not hardcoded from memory. Join is on stable codes (`CTYUA23CD`, `ICB23CD`, `NHSER24CD`) against Fingertips `Code`. No name matching anywhere.
 

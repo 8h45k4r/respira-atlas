@@ -34,8 +34,8 @@ applicable" are four different things, styled differently, explained
 differently, and kept apart in the type system — a non-present observation has
 no `value` property at all, so it cannot be read by mistake.
 
-**Coverage is admitted, not hidden.** The data source (OHID Fingertips INHALE)
-publishes **England only**. All four UK nations stay on the map and remain
+**Coverage is admitted, not hidden.** The data source (OHID Fingertips, five
+profiles) publishes **England only**. All four UK nations stay on the map and remain
 navigable, but Scotland, Wales and Northern Ireland are drawn as *not covered by
 this dataset* — never as zero, never as a low value. No UK-wide benchmark is
 computed anywhere, and the England-only label travels with every figure and
@@ -60,41 +60,66 @@ data are weaker, not more confident. A two-point change is never called a trend.
 Recorded prevalence is never called disease prevalence. Overlapping confidence
 intervals are never treated as a significance test.
 
+**Uncertainty is drawn at the level the publisher used.** The publisher's
+England flag is shown as the mark itself (solid = different, hollow = similar),
+and the interval beside it is the one the flag follows: 99.8% for hypertension,
+depression and asthma prevalence, 95% elsewhere. The level is read from the
+data, so bar and dot can never contradict each other.
+
+**Axes follow the measure.** Rates and proportions start at zero; life
+expectancy and scores get a fitted axis with a drawn break and the words "axis
+starts at 79, not zero". It is a rule per indicator, not a toggle.
+
+**Show it, then say it.** Every view leads with graphics — chips, tiles,
+waffles, range bars, a claim-ladder staircase — and keeps the full written
+caveats one click away, in the page for screen readers and print.
+
 **Exports are real.** The SVG export contains genuine vector paths and live
 text, verified by test — not a PNG in an SVG wrapper, and not a screenshot of
 the screen.
 
 ---
 
-## The three modes
+## The views
 
-**Start here** — a discovery page with four ways in: explore a place, explore a
-topic, compare populations, or follow an evidence story. Every question, date
-and count on it is read from the prepared dataset; none is written in advance.
+**Start here** — count-up headline figures, a coverage map drawn from the
+nations layer (England filled, other nations hatched as not covered), four ways
+in, a bar chart of indicators per topic, starting questions as cards and a
+timeline of the source's latest uploads. Every question, date and count is read
+from the prepared dataset.
 
-**Explore places** — a map-led workspace. Choropleth, linked detail panel,
-trend, dot-and-whisker comparison, inequality breakdown, exposure/outcome
-scatter, and a fully keyboard-operable data table that does everything the map
-does.
+**Explore places** — a map-led workspace, fitted to England. One selection
+drives every view: the map outline, the trend line with its confidence band
+beside England, and a ranking around the selected area (ranks, flag glyphs,
+clickable rows). The detail panel is a visual card — interval strip against
+England, "vs England" and "change" tiles, a sparkline and caveat chips — with
+the full written statement one click away. A keyboard-operable data table does
+everything the map does.
 
-**Evidence stories** — four questions worked end to end: the pattern, how much
-of it survives the uncertainty, and what it cannot establish. The framing is
-authored; **every number in the prose is computed from the observations when the
-page renders**, and a story whose computation cannot be satisfied reports itself
-unavailable rather than falling back on a remembered result.
+**Evidence stories** — four questions worked end to end. Each step leads with a
+computed graphic (a range bar, a waffle of the publisher's flags, count-up
+callouts, is / is-not cards), with a sticky step tracker and the prose behind
+"Read the explanation". **Every number is computed from the observations when
+the page renders**; a story whose computation cannot be satisfied reports itself
+unavailable.
 
-**Explain a finding** — turns one selection into a defensible statement:
-descriptive headline, annotated map, comparison, interpretation, uncertainty,
-provenance, and the questions that remain open. Includes an explicit panel on
-what the figure *cannot* tell you.
+**Explain a finding** — one selection as a four-step flow (observed → vs England
+→ evidence → over time), then the annotated map, nearest neighbours in value,
+the trend, "how big?" and "real?" as separate tiles, and what the figure *cannot*
+tell you.
 
-**Prepare a briefing** — a publication composer. Single map, single chart, map
-plus comparison, a print-ready A4 evidence brief, a presentation slide, and
-editable conceptual diagrams. Exports to vector SVG, high-resolution PNG,
-filtered CSV, and a JSON figure specification for reproducibility.
+**Prepare a briefing** — a publication composer: layouts picked from thumbnails,
+text size from an A/A/A switch, downloads as tiles (vector SVG, 3× PNG, CSV,
+JSON figure specification, print). The A4 brief opens with a key-figures band and
+carries the mandatory notes once.
 
-Plus **Coverage** (the indicator × nation × geography matrix) and **Methods**
-(definitions, statistical rules, and the limits of the evidence).
+**Coverage** — nation tiles, summary counts and the indicator × geography matrix
+grouped by topic. **Methods** — principles, a claim-ladder staircase, the four
+no-value states as swatches, a diagram of the two geographies, and every rule as
+a card.
+
+Motion (reveal on scroll, count-up, waffles, connectors) is switched off under
+`prefers-reduced-motion` and in print.
 
 ---
 
@@ -138,19 +163,23 @@ The prepared dataset is committed, so the app runs offline with no API access.
 | `npm run dev` | Development server |
 | `npm run build` | Production build to `dist/` |
 | `npm test` | 116 unit tests |
-| `npm run smoke` | 29 browser tests against the production build |
+| `npm run smoke` | 29 browser tests against the production build (see note below) |
 | `npm run data:validate` | Checks the committed dataset for violations |
 | `npm run data:prepare` | Re-fetches everything from source (~3 minutes) |
 
 ### Tests actually executed
 
-All of the following were run and passed on the committed tree:
+All of the following were run on the committed tree. All unit tests pass. In the
+latest browser run 28 of 29 passed: the "no console errors" check fails on a
+single 404 that fails identically on the commit before the visual redesign, so it
+is not yet traced to its source.
 
 - **116 unit tests** — classification and breakpoints, benchmark comparison,
   comparability gating, the missing/suppressed/zero distinction, evidence-statement
   eligibility, URL round trips, columnar decode integrity, SVG export content,
   per-indicator axis rules, ranking, chart layout (no rotated text, direct
-  labels, drawn axis breaks) and sex-separated trend lines.
+  labels, drawn axis breaks), sex-separated trend lines, and the publisher-flag
+  interval level checked against the committed data.
 - **29 browser tests** — discovery driven by real metadata, evidence stories computing consistent figures from the data and exporting genuine vector, an accurate
   multi-profile coverage statement, topic entry points, UK-only map, all four
   nations present, out-of-coverage nations visibly unsupported, city search
@@ -187,7 +216,9 @@ schema validation). All dependencies pinned to exact versions.
 The interface is Oxford blue (#002147) with brass as its counterpart; data
 colour follows the same two hues so a figure lifted into a report still reads as
 part of the same publication. Both map ramps are monotonic in lightness and
-carry no red/green opposition.
+carry no red/green opposition. Every page sits in one centred column (the
+`.shell` class), and the visual rules are written down in
+[docs/VISUAL-DESIGN.md](docs/VISUAL-DESIGN.md).
 
 Interactive maps use amCharts under its free licence, which requires the
 attribution link that is present on the map and has not been removed. No licence

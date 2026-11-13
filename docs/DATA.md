@@ -4,37 +4,74 @@
 
 | Source | Used for | Licence |
 |---|---|---|
-| [OHID Fingertips](https://fingertips.phe.org.uk/profile/inhale), respiratory disease profile (ID 29) | All observations and indicator metadata | Open Government Licence v3.0 |
+| [OHID Fingertips](https://fingertips.phe.org.uk/), five profiles (below) | All observations and indicator metadata | Open Government Licence v3.0 |
 | [ONS Open Geography Portal](https://geoportal.statistics.gov.uk/) | Boundaries and the settlement index | Open Government Licence v3.0 |
 
 No API key is needed by either. Neither is called at runtime: both are
 build-time only, in `scripts/prepare-data`.
 
+| Fingertips profile | ID | Key |
+|---|---|---|
+| Respiratory disease | 29 | `respiratory-disease` |
+| Adult mental health and wellbeing | 50 | `adult-mental-health-wellbeing` |
+| Child and Maternal Health | 105 | `child-health-profiles` |
+| Mortality Profile | 125 | `mortality-profile` |
+| Cardiovascular Disease | 135 | `cardiovascular` |
+
+An indicator is attributed to the profile it was retrieved through. Several
+measures appear in more than one profile with the same figures.
+
+The committed dataset was prepared on **18 October 2026** (`manifest.generatedAt`)
+and is marked `dataKind: "real"`.
+
 ## The indicator set
 
-14 indicators, each resolved from source metadata — no ID is invented:
+35 indicators across 11 topics, each resolved from source metadata — no ID is
+invented. Geographies: **C** counties and unitary authorities (May 2023),
+**I** integrated care boards (July 2022), **R** NHS England regions (July 2022).
 
-| ID | Indicator | Domain | Unit |
-|---|---|---|---|
-| 93963 | Mortality rate from respiratory disease, all ages | Mortality | per 100,000 |
-| 40701 | Under 75 mortality rate from respiratory disease | Mortality | per 100,000 |
-| 93724 | Under 75 mortality from respiratory disease considered preventable | Mortality | per 100,000 |
-| 1204 | Mortality rate from COPD, all ages | COPD | per 100,000 |
-| 253 | COPD: QOF prevalence | COPD | % |
-| 93577 | Emergency hospital admissions for COPD, all ages | COPD | per 100,000 |
-| 90933 | Asthma: QOF prevalence | Asthma | % |
-| 93573 | Emergency hospital admissions for asthma in adults (19+) | Asthma | per 100,000 |
-| 90810 | Hospital admissions for asthma (under 19) | Children | per 100,000 |
-| 93576 | Emergency admissions for bronchiolitis (under 2) | Children | per 100,000 |
-| 93575 | Emergency hospital admissions for respiratory disease | Respiratory | per 100,000 |
-| 93574 | Emergency hospital admissions for pneumonia | Pneumonia | per 100,000 |
-| 92443 | Smoking prevalence in adults (APS) | Risk factor | % |
-| 93867 | Air pollution: fine particulate matter (PM2.5) | Environmental | µg/m³ |
+| ID | Indicator | Topic | Unit | Geographies |
+|---|---|---|---|---|
+| 90366 | Life expectancy at birth | Population health | years | C, I, R |
+| 93823 | Mortality rate from all causes, all ages | Population health | per 100,000 | C, I, R |
+| 93721 | Under 75 mortality rate from causes considered preventable | Population health | per 100,000 | C, I, R |
+| 93963 | Mortality rate from respiratory disease, all ages | Respiratory | per 100,000 | C, I, R |
+| 40701 | Under 75 mortality rate from respiratory disease | Respiratory | per 100,000 | C, I, R |
+| 93724 | Under 75 mortality from respiratory disease considered preventable | Respiratory | per 100,000 | C, I, R |
+| 1204 | Mortality rate from COPD, all ages | Respiratory | per 100,000 | C, I, R |
+| 253 | COPD: QOF prevalence | Respiratory | % | C, I, R |
+| 93577 | Emergency hospital admissions for COPD, all ages | Respiratory | per 100,000 | I, R |
+| 90933 | Asthma: QOF prevalence | Respiratory | % | C, I, R |
+| 93573 | Emergency admissions for asthma in adults (19+) | Respiratory | per 100,000 | I, R |
+| 90810 | Hospital admissions for asthma (under 19) | Respiratory | per 100,000 | C, I, R |
+| 93576 | Emergency admissions for bronchiolitis (under 2) | Respiratory | per 100,000 | I, R |
+| 93575 | Emergency hospital admissions for respiratory disease | Respiratory | per 100,000 | I, R |
+| 93574 | Emergency hospital admissions for pneumonia | Respiratory | per 100,000 | I, R |
+| 40401 | Under 75 mortality rate from cardiovascular disease | Cardiovascular | per 100,000 | C, I, R |
+| 93956 | Mortality rate from cardiovascular disease, all ages | Cardiovascular | per 100,000 | C, I, R |
+| 90986 | Hospital admissions due to stroke | Cardiovascular | per 100,000 | C |
+| 219 | Hypertension: QOF prevalence | Cardiovascular | % | C, I, R |
+| 40501 | Under 75 mortality rate from cancer | Cancer | per 100,000 | C, I, R |
+| 93959 | Mortality rate from cancer, all ages | Cancer | per 100,000 | C, I, R |
+| 41001 | Suicide rate | Mental health | per 100,000 | C, I, R |
+| 848 | Depression: QOF prevalence | Mental health | % | C, I, R |
+| 21001 | Emergency admissions for intentional self-harm | Mental health | per 100,000 | C, I, R |
+| 92196 | Infant mortality rate | Child and maternal | per 1,000 | C, I, R |
+| 90801 | Child mortality rate (1 to 17 years) | Child and maternal | per 100,000 | C, I, R |
+| 92517 | Breastfeeding prevalence at 6 to 8 weeks | Child and maternal | % | C |
+| 90323 | Year 6 prevalence of obesity (including severe obesity) | Child and maternal | % | C |
+| 93881 | Obesity prevalence in adults | Obesity and metabolic | % | C |
+| 91380 | Alcohol-specific mortality | Alcohol and drugs | per 100,000 | C |
+| 92443 | Smoking prevalence in adults (APS) | Behavioural risk factors | % | C, I, R |
+| 93015 | Physically inactive adults | Behavioural risk factors | % | C |
+| 93867 | Air pollution: fine particulate matter (PM2.5) | Environment | µg/m³ | C |
+| 94240 | Deprivation score (IMD 2025) | Wider determinants | score | C, I |
+| 93700 | Children in relative low income families (under 16s) | Wider determinants | % | C, I, R |
 
 Each keeps its full published metadata: definition, rationale, numerator and
 denominator definitions and sources, method, standard population, confidence
 interval method, disclosure control, caveats, copyright, source URL, publisher,
-retrieval date and licence.
+retrieval date and licence. The Methods view shows all of it per indicator.
 
 ### One indicator was excluded, and why
 
@@ -81,6 +118,14 @@ that matches exactly is the one used and recorded:
 
 The validation script re-checks every join on every run, and the preparation
 script aborts if a layer's feature count changes upstream.
+
+> **These ICB boundaries are now historical.** On 1 April 2026, NHS England
+> abolished 12 ICBs and created 6, leaving 36. The July 2022 layer still matches
+> the codes Fingertips published for area type 221 when this dataset was
+> prepared, so the join is correct for these data. But the map shows
+> organisations that no longer all exist. When Fingertips publishes figures on
+> the new ICBs, the layer has to be replaced by the code-set match described
+> above, not by count. See [LIMITATIONS.md](LIMITATIONS.md#data-currency).
 
 > Service names containing parentheses return
 > `{"error":{"code":400,"message":"Invalid URL"}}` on this ArcGIS host even when
@@ -140,12 +185,30 @@ public/data/
 ```
 
 Observations use a **columnar encoding**: parallel arrays against shared
-dictionaries. An object-per-row JSON encoding put the dataset at 77 MB; the same
-rows encoded columnarly, with subgroups split into separate lazy-loaded files,
-come to **18.6 MB total with primary files under 660 kB each**. No field, flag
+dictionaries, with subgroup breakdowns split into separate lazy-loaded files.
+For this release that is **85 primary files totalling 12.3 MB (the largest
+670 kB)** and **44 subgroup files totalling 32.9 MB**, fetched only when a reader
+asks for a breakdown. A view never loads more than one primary file per
+indicator and geography. No field, flag
 or state is dropped — a reference decoder round-trips every row exactly, and a
 unit test proves it, including that an omitted column decodes as `null` rather
 than `0`.
+
+## Derived when a file loads
+
+Two things are read off the data in the browser rather than stored, so they stay
+right after any refresh:
+
+- **The interval level behind the publisher's England flag.** Fingertips tests
+  most indicators against England at 95%, but hypertension (219), depression
+  (848) and asthma (90933) prevalence at 99.8%. The level is not in the
+  retrieved metadata, so `src/data/selectors/flag-level.ts` finds the level at
+  which the flag and the published interval agree for every compared area. A
+  unit test checks it against the committed files: 99.8% for those three at
+  every geography, 95% for everything else.
+- **Per-sex series.** Observations are indexed sex → area → period, because
+  some measures (life expectancy) are published only by sex, and a series keyed
+  on area and period alone would mix the two populations.
 
 ## Refreshing the data
 
