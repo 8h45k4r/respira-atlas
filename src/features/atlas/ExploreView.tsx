@@ -198,7 +198,7 @@ function ExploreBody({
       />
 
       {/* Breadcrumb and back */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-1.5 no-print">
+      <div className="shell flex flex-wrap items-center gap-2 border-b border-slate-200 py-1.5 no-print">
         <Button
           variant="ghost"
           size="sm"
@@ -256,7 +256,7 @@ function ExploreBody({
       </div>
 
       {allNotices.length > 0 ? (
-        <div className="border-b border-amber-200 bg-amber-50 px-3 py-1.5" role="status">
+        <div className="shell border-b border-amber-200 bg-amber-50 py-1.5" role="status">
           <ul className="space-y-0.5 text-2xs text-amber-900">
             {allNotices.map((notice) => <li key={notice}>{notice}</li>)}
           </ul>
@@ -264,14 +264,14 @@ function ExploreBody({
       ) : null}
 
       {searchNotice ? (
-        <div className="flex items-start gap-2 border-b border-brass-200 bg-brass-50 px-3 py-2" role="status">
+        <div className="shell flex items-start gap-2 border-b border-brass-200 bg-brass-50 py-2" role="status">
           <p className="flex-1 text-xs text-brass-900">{searchNotice}</p>
           <Button variant="ghost" size="sm" onClick={onDismissNotice}>Dismiss</Button>
         </div>
       ) : null}
 
       {/* Desktop: map-led split. Tablet/mobile: a coherent stack. */}
-      <div className="grid min-h-0 flex-1 gap-2 p-2 lg:grid-cols-[17rem_minmax(0,1fr)_19rem]">
+      <div className="shell grid min-h-0 flex-1 gap-3 py-3 lg:grid-cols-[16rem_minmax(0,1fr)_18rem]">
         <div className="order-1 space-y-3 lg:order-none">
           <div className="panel p-3 no-print">
             <AreaSearch

@@ -77,7 +77,7 @@ export function DiscoverView({
     onChange({ mode: 'explore', ...patch });
 
   return (
-    <div className="mx-auto w-full max-w-[72rem] px-4 py-8">
+    <div className="shell py-8">
       <section className="max-w-3xl">
         <h2 className="text-[1.6rem] font-semibold leading-[1.15] tracking-[-0.02em] text-oxford-800">
           What would you like to understand about public health?

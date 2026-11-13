@@ -68,6 +68,17 @@ const variationVsEvidence: StorySpec = {
 
     steps.push({
       heading: 'What the map shows',
+      graphic: {
+        kind: 'range',
+        ranges: [{
+          measure: indicator.shortName,
+          unit: unitLabel(indicator),
+          low: { value: range.lowest.value, display: formatValue(range.lowest.value, indicator), name: name(range.lowest.areaCode) },
+          median: { value: range.median, display: formatValue(range.median, indicator) },
+          high: { value: range.highest.value, display: formatValue(range.highest.value, indicator), name: name(range.highest.areaCode) },
+          ratio: range.ratio !== null ? formatRatio(range.ratio) : null,
+        }],
+      },
       body:
         `Across ${range.count} ${data.areaType.label.toLowerCase()} with a published ` +
         `figure for ${data.periodLabel}, ${indicator.shortName.toLowerCase()} ranges from ` +
@@ -90,6 +101,20 @@ const variationVsEvidence: StorySpec = {
 
     steps.push({
       heading: 'How much of it the publisher calls a difference',
+      graphic: {
+        kind: 'split',
+        caption: `${significance.compared} areas the publisher compared with England`,
+        segments: [
+          { label: 'similar to England', count: significance.indistinguishable, style: 'similar' },
+          { label: 'worse', count: significance.counts.worse, style: 'different' },
+          { label: 'better', count: significance.counts.better, style: 'different-light' },
+          {
+            label: 'higher or lower',
+            count: significance.counts.higher + significance.counts.lower,
+            style: 'different',
+          },
+        ],
+      },
       body:
         `The publisher compares each area with England and supplies its own flag. Of the ` +
         `${significance.compared} areas it compared, ${significance.indistinguishable} — ` +
@@ -107,6 +132,19 @@ const variationVsEvidence: StorySpec = {
     if (precision.medianRelativeWidth !== null && precision.widest) {
       steps.push({
         heading: 'Why so few differences survive',
+        graphic: {
+          kind: 'stats',
+          items: [
+            {
+              value: precision.medianRelativeWidth, suffix: '%', emphasis: true,
+              label: 'median 95% interval width, as a share of the estimate',
+            },
+            {
+              value: precision.widest.relativeWidth, suffix: '%',
+              label: `widest interval: ${name(precision.widest.areaCode)}`,
+            },
+          ],
+        },
         body:
           `The estimates are imprecise. The median 95% confidence interval spans ` +
           `${precision.medianRelativeWidth.toFixed(0)}% of the estimate itself, and for ` +
@@ -203,6 +241,13 @@ const readingAbsence: StorySpec = {
 
     steps.push({
       heading: 'Suppressed is not low',
+      graphic: {
+        kind: 'stats',
+        items: [
+          { value: availability.suppressed, emphasis: true, label: `of ${availability.total} areas withheld by the publisher` },
+          { value: availability.present, label: 'areas with a published figure' },
+        ],
+      },
       body:
         `For ${indicator.shortName.toLowerCase()} in ${data.periodLabel}, ` +
         `${availability.suppressed} of ${availability.total} areas have no published ` +
@@ -224,6 +269,13 @@ const readingAbsence: StorySpec = {
 
     steps.push({
       heading: 'Not covered is not zero',
+      graphic: {
+        kind: 'stats',
+        items: [
+          { value: outsideCoverage, emphasis: true, label: 'areas in Scotland, Wales and Northern Ireland: no figure, not a low one' },
+          { value: 0, label: 'UK-wide benchmarks computed' },
+        ],
+      },
       body:
         `${outsideCoverage} of the ${data.registry.size} areas on this map are in Scotland, ` +
         `Wales or Northern Ireland. Every indicator in this release comes from an ` +
@@ -240,6 +292,15 @@ const readingAbsence: StorySpec = {
       const zeroArea = smoking.current.find((o) => isPresent(o) && o.value === 0);
       steps.push({
         heading: 'And zero is a real value',
+        graphic: {
+          kind: 'stats',
+          items: [
+            {
+              value: smokingAvailability.zeroValues, emphasis: true,
+              label: zeroArea ? `published value of exactly 0: ${context.areaName(zeroArea.areaCode)}` : 'published value of exactly 0',
+            },
+          ],
+        },
         body:
           `${smoking.indicator.shortName} in ${smoking.periodLabel} has ` +
           `${smokingAvailability.zeroValues} area with a published value of exactly zero` +
@@ -255,6 +316,16 @@ const readingAbsence: StorySpec = {
 
     steps.push({
       heading: 'What that leaves',
+      graphic: {
+        kind: 'split',
+        caption: `${data.registry.size} areas on the map`,
+        segments: [
+          { label: 'published figure', count: availability.present, style: 'present' },
+          { label: 'suppressed', count: availability.suppressed, style: 'suppressed' },
+          { label: 'no value published', count: availability.missing, style: 'missing' },
+          { label: 'outside coverage', count: outsideCoverage, style: 'outside' },
+        ],
+      },
       body:
         `Of the ${data.registry.size} areas drawn on this map, ${availability.total} are in ` +
         `England and have an observation of some kind: ${availability.present} carry a ` +
@@ -345,6 +416,25 @@ const twoMeasures: StorySpec = {
 
     steps.push({
       heading: 'The two measures',
+      ...(xRange && yRange
+        ? {
+            graphic: {
+              kind: 'range' as const,
+              ranges: [
+                {
+                  measure: x.indicator.shortName, unit: unitLabel(x.indicator),
+                  low: { value: xRange.lowest.value, display: formatWithUnit(xRange.lowest.value, x.indicator), name: context.areaName(xRange.lowest.areaCode) },
+                  high: { value: xRange.highest.value, display: formatWithUnit(xRange.highest.value, x.indicator), name: context.areaName(xRange.highest.areaCode) },
+                },
+                {
+                  measure: y.indicator.shortName, unit: unitLabel(y.indicator),
+                  low: { value: yRange.lowest.value, display: formatWithUnit(yRange.lowest.value, y.indicator), name: context.areaName(yRange.lowest.areaCode) },
+                  high: { value: yRange.highest.value, display: formatWithUnit(yRange.highest.value, y.indicator), name: context.areaName(yRange.highest.areaCode) },
+                },
+              ],
+            },
+          }
+        : {}),
       body:
         `${x.indicator.shortName} ranges from ` +
         `${xRange ? formatWithUnit(xRange.lowest.value, x.indicator) : 'its lowest'} to ` +
@@ -358,6 +448,14 @@ const twoMeasures: StorySpec = {
 
     steps.push({
       heading: 'Plotted against each other',
+      graphic: {
+        kind: 'split',
+        caption: `Areas in ${paired.period}`,
+        segments: [
+          { label: 'have both measures: plotted', count: paired.pairs.length, style: 'present' },
+          { label: 'have only one: not plotted', count: paired.onlyX + paired.onlyY, style: 'muted' },
+        ],
+      },
       body:
         `${paired.pairs.length} areas have a published value for both measures in ` +
         `${paired.period}` +
@@ -382,6 +480,11 @@ const twoMeasures: StorySpec = {
 
     steps.push({
       heading: 'What the chart is, and is not, evidence of',
+      graphic: {
+        kind: 'contrast',
+        is: ['A pattern across areas', 'Both measures, same period and geography'],
+        isNot: ['A link between individual children', 'Evidence that one causes the other'],
+      },
       body:
         `Each point is an area, not a child. If areas with more children in low-income ` +
         `families also record more obesity at year 6, that is a statement about areas. It ` +
@@ -465,6 +568,11 @@ const noSingleNumber: StorySpec = {
 
     steps.push({
       heading: 'There is no combined figure to show',
+      graphic: {
+        kind: 'contrast',
+        is: sexes.map((sex) => `${sex}: published`),
+        isNot: ['A combined figure for everyone'],
+      },
       body:
         `${indicator.shortName} is published separately for ${sexes.join(' and ')}, with no ` +
         `combined series. The atlas therefore cannot open on a single map of it: before ` +
@@ -478,6 +586,14 @@ const noSingleNumber: StorySpec = {
     if (gap) {
       steps.push({
         heading: 'How far apart the groups are',
+        graphic: {
+          kind: 'stats',
+          items: [
+            { value: gap.highest.value, decimals: 1, label: gap.highest.group },
+            { value: gap.lowest.value, decimals: 1, label: gap.lowest.group },
+            { value: gap.gap, decimals: 1, suffix: ` ${unitLabel(indicator)}`, emphasis: true, label: 'gap between them' },
+          ],
+        },
         body:
           `For England in ${data.periodLabel}, ${indicator.shortName.toLowerCase()} is ` +
           `${formatWithUnit(gap.highest.value, indicator)} for ${gap.highest.group} and ` +
@@ -503,6 +619,16 @@ const noSingleNumber: StorySpec = {
     if (precision.medianRelativeWidth !== null) {
       steps.push({
         heading: 'A precise measure, unusually',
+        graphic: {
+          kind: 'stats',
+          items: [
+            {
+              value: precision.medianRelativeWidth, decimals: 1, suffix: '%', emphasis: true,
+              label: 'median 95% interval width, as a share of the estimate',
+            },
+            { value: precision.withInterval, label: 'areas with a published interval' },
+          ],
+        },
         body:
           `Across ${precision.withInterval} areas, the median 95% interval for this measure ` +
           `spans ${precision.medianRelativeWidth.toFixed(1)}% of the estimate. That is far ` +

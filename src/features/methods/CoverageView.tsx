@@ -59,7 +59,7 @@ export function CoverageView({
   const shownNations = nation === 'all' ? nations : [nation];
 
   return (
-    <div className="mx-auto w-full max-w-[100rem] px-4 py-5">
+    <div className="shell py-5">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-3xl">
           <p className="label-caps">Coverage</p>

@@ -139,3 +139,79 @@
 .print-only {
   display: none;
 }
+
+/*
+ * Motion for the narrative views (stories, explain, briefing).
+ * Elements reveal as they scroll into view, waffle cells pop in, bars grow and
+ * connectors draw. Under a reduced-motion preference, and in print, everything
+ * is shown in its final state with no movement.
+ */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.reveal.reveal-in {
+  animation: reveal-up 0.65s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.cell-pop {
+  animation: cell-pop 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+@keyframes cell-pop {
+  from { opacity: 0; transform: scale(0.2); }
+  to { opacity: 1; transform: scale(1); }
+}
+.grow-x {
+  transform-origin: left center;
+  animation: grow-x 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.draw-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-line 1.1s ease-out forwards;
+}
+@keyframes draw-line {
+  to { stroke-dashoffset: 0; }
+}
+.pulse-ring {
+  animation: pulse-ring 2.4s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(169, 121, 31, 0.45); }
+  70% { box-shadow: 0 0 0 9px rgba(169, 121, 31, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(169, 121, 31, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+  .draw-line { stroke-dashoffset: 0; }
+  .pulse-ring { animation: none; }
+}
+@media print {
+  .reveal, .cell-pop, .grow-x { opacity: 1 !important; transform: none !important; animation: none !important; }
+  .draw-line { stroke-dashoffset: 0 !important; animation: none !important; }
+}
+
+/*
+ * The page shell: one centred column for header, navigation, every view and
+ * the footer, with gutters that grow with the screen. Change the width here,
+ * not per view.
+ */
+.shell {
+  width: 100%;
+  max-width: 84rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+@media (min-width: 768px) {
+  .shell { padding-inline: 1.5rem; }
+}
+@media (min-width: 1280px) {
+  .shell { padding-inline: 2.5rem; }
+}

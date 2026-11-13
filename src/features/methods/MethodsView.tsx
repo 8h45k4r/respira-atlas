@@ -16,7 +16,7 @@ export function MethodsView({ catalogue }: { catalogue: Catalogue }) {
   const indicator = indicators.find((item) => item.id === selectedId) ?? indicators[0];
 
   return (
-    <div className="mx-auto w-full max-w-[82rem] px-4 py-5">
+    <div className="shell py-5">
       <div className="mb-4 max-w-3xl">
         <p className="label-caps">Methods</p>
         <h2 className="mt-1 text-lg font-semibold leading-tight text-oxford-900">

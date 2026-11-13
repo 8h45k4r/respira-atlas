@@ -167,7 +167,50 @@ Rules that keep this honest:
 - Better/worse wording in graphics goes through the same recorded-prevalence
   guard as the written statement.
 
-## 9. Accessibility checklist for a new chart
+## 9. Narrative views: flow, infographics and motion
+
+Stories, Explain and Briefing use a shared kit (`src/components/infographics`,
+`src/components/motion`):
+
+| Piece | Use it for |
+|---|---|
+| `FlowSteps` | A reading order drawn as a path: numbered nodes, a connector that draws itself. Explain opens with Observed → vs England → Evidence → Over time. |
+| `StatCallouts` | One to three numbers that matter, counting up as they appear; the key one in brass. |
+| `Waffle` | A count and a share at once: one square per area, styled by state (hollow = similar to England, solid = different, hatched = suppressed, pale = not covered). |
+| `RangeBar` | Lowest, median and highest on one track, with the ratio between the ends. |
+| `ContrastCards` | "This shows / It does not show", side by side. |
+| `IconCards` | Lists of caveats or questions: first sentence as the headline, the rest beneath. |
+| `LayoutThumb`, `DownloadTile` | The briefing composer: choose by looking, download by icon. |
+
+Rules:
+
+- **Graphics carry computed numbers only.** A story step's `graphic` is built in
+  the same `build()` call, from the same values, as its prose, so the two cannot
+  disagree. No graphic contains an authored number.
+- **Prose stays in the page.** Step explanations and the full statement sit
+  behind "Read the explanation" or "Full written statement". When closed they
+  are visually hidden, not removed, so screen readers, print and tests still
+  read them.
+- **Motion is for orientation, never decoration of a value.** Elements reveal
+  on scroll (`Reveal`), numbers count up (`CountUp`, whose final value is always
+  in the page as text), waffle cells pop in, bars grow and connectors draw.
+  Everything is shown in its final state under `prefers-reduced-motion` and in
+  print.
+- **The story step tracker** follows scroll position in both directions and is
+  hidden in print.
+- **"Change" compares non-overlapping periods.** In a rolling 3-year series it
+  compares with the period three steps back. The written statement and the
+  change tile use the same rule.
+
+## 10. Page shell
+
+Header, navigation, every view and the footer share one centred column, the
+`.shell` class in `globals.css`: 84rem wide, with 16, 24 or 40 px gutters by
+screen size. Change the width there, not per view. The site title links home
+(Start here). The footer is one line, with independence and licensing details
+behind "Licensing & independence".
+
+## 11. Accessibility checklist for a new chart
 
 - Text contrast is at least 4.5:1 on white, and marks at least 3:1. Brass text
   uses `SELECTION.text`.

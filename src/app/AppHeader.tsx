@@ -23,10 +23,20 @@ export function AppHeader({
 }) {
   return (
     <header className="border-b border-slate-200 bg-white no-print">
-      <div className="mx-auto flex max-w-[110rem] flex-wrap items-end justify-between gap-x-6 gap-y-2 px-4 pb-0 pt-3">
+      <div className="shell flex flex-wrap items-end justify-between gap-x-6 gap-y-2 pb-0 pt-3">
         <div className="min-w-0">
           <h1 className="text-[1.0625rem] font-semibold leading-tight tracking-[-0.015em] text-oxford-900">
-            Public Health Evidence Atlas
+            <a
+              href="./"
+              onClick={(event) => {
+                event.preventDefault();
+                onModeChange('discover');
+              }}
+              className="rounded hover:text-brass-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-700"
+              title="Home"
+            >
+              Public Health Evidence Atlas
+            </a>
           </h1>
           <p className="mt-0.5 text-xs text-slate-600">
             Understand health across people, places, and time.
@@ -47,7 +57,7 @@ export function AppHeader({
         ) : null}
       </div>
 
-      <nav aria-label="Workspace" className="mx-auto max-w-[110rem] px-4">
+      <nav aria-label="Workspace" className="shell">
         <ul className="flex flex-wrap items-center gap-0.5">
           {MODES.map((item) => {
             const Icon = item.icon;
