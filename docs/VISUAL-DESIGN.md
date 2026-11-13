@@ -142,7 +142,32 @@ the covered nation in blue and says in one line which nations are missing and
 that this is a coverage gap, not low values. The SVG export uses the same fit and
 clips context areas at the frame.
 
-## 8. Accessibility checklist for a new chart
+## 8. Show it, then say it
+
+Every view leads with graphics, and text is one click away. A new view follows
+the same order:
+
+| Instead of | Use | Component |
+|---|---|---|
+| A metadata paragraph (population, period, geography, unit, source) | Icon chips, truncated with the full value on hover | `FigureFrame` meta chips |
+| A limitation paragraph | 2–4 caveat chips, always visible, one icon per kind (coverage, not-causal, pooled, gaps, interval, rank, recording, areas, test), with "Why?" opening the full text | `CaveatChips`, `FigureFrame` `caveats` |
+| "The interval does not include England…" | A strip: the interval(s), England's line, the flag as a solid or hollow dot | `IntervalVsEngland` |
+| "That is 6.40 per 100,000 higher…" | A stat tile: arrow, signed number, unit small, relative difference below | `DifferenceTile` |
+| "Compared with 2022–24…" | A change tile against the latest period that shares no years with this one (three steps back for 3-year pooled series), plus the publisher's trend as an icon | `ChangeTile` |
+| A trend sentence | A sparkline of the area against England, on the indicator's axis rule | `Sparkline` |
+| Counts in a list | Count tiles with the swatch of the state they count | Explore empty state |
+| Control helper paragraphs | An "About this" toggle; only a warning the reader must act on stays visible, as a chip | `Hint` in `Controls` |
+
+Rules that keep this honest:
+
+- Caveats are never removed, only shortened. The full text stays in the page:
+  it is read by screen readers, printed, and carried in exports.
+- A chip says what to keep in mind, never a conclusion ("Pattern, not cause",
+  not "No link").
+- Better/worse wording in graphics goes through the same recorded-prevalence
+  guard as the written statement.
+
+## 9. Accessibility checklist for a new chart
 
 - Text contrast is at least 4.5:1 on white, and marks at least 3:1. Brass text
   uses `SELECTION.text`.

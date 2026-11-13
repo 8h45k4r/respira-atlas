@@ -102,6 +102,10 @@ export function InequalityFigure({
           geography: selection.areaType.label, unit: indicator.unit ?? '',
           source: indicator.dataSource ?? '',
         }}
+        caveats={[
+          { kind: 'not-causal', label: 'Describes a gap, not why' },
+          { kind: 'areas', label: 'Within one area and period' },
+        ]}
         limitation="Subgroup breakdowns are compared within one area and period only. A gap between groups describes the gap; it does not explain it."
       >
         <div className="flex flex-col items-start gap-2 p-5">
@@ -144,6 +148,10 @@ export function InequalityFigure({
         unit: indicator.unit ?? 'not stated',
         source: indicator.dataSource ?? 'Not stated',
       }}
+      caveats={[
+        { kind: 'not-causal', label: 'Describes a gap, not why' },
+        { kind: 'areas', label: 'Within one area and period' },
+      ]}
       limitation="A difference between subgroups is a description of that difference, not an explanation of it. These groups differ in many ways besides the one labelled, and the comparison is valid only within this area and period."
       onExport={
         allRows.length > 0

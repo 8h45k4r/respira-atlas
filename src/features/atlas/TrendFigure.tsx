@@ -113,6 +113,13 @@ export function TrendFigure({
         unit: indicator.unit ?? 'not stated',
         source: indicator.dataSource ?? 'Not stated',
       }}
+      caveats={[
+        ...(series.pooled
+          ? [{ kind: 'pooled' as const, label: `${series.years}-year periods overlap` }]
+          : [{ kind: 'test' as const, label: 'Two points ≠ a trend' }]),
+        { kind: 'gaps', label: 'Gap = no value, not zero' },
+        { kind: 'interval', label: 'Band = 95% interval' },
+      ]}
       limitation={
         series.pooled
           ? `Points are rolling ${series.years}-year pooled estimates. Consecutive points share ` +

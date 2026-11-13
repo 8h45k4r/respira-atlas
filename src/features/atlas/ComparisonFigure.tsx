@@ -274,6 +274,19 @@ export function ComparisonFigure({
       indicatorName={indicator.name}
       meta={meta}
       limitation={limitation}
+      caveats={[
+        {
+          kind: 'interval',
+          label: flagLevel.basis === 'exact'
+            ? `Bars = ${intervalLevel}%, as the flag`
+            : `Bars = ${intervalLevel}% interval`,
+        },
+        { kind: 'test', label: 'Overlap ≠ significance test' },
+        { kind: 'rank', label: 'Rank = position, not performance' },
+        ...(flagLevel.basis === 'approximate'
+          ? [{ kind: 'warning' as const, label: 'Flag and bar may differ' }]
+          : []),
+      ]}
       onExport={() =>
         downloadSvg(
           renderDotWhiskerSvg({

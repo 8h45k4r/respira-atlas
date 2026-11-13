@@ -234,6 +234,10 @@ function ExplainBody({
                 unit: indicator.unit ?? 'not stated',
                 source: indicator.dataSource ?? 'Not stated',
               }}
+              caveats={[
+                { kind: 'rank', label: 'Position, not a league table' },
+                { kind: 'interval', label: 'Neighbours often indistinguishable' },
+              ]}
               limitation="Neighbouring areas in this ordering are usually not distinguishable from one another once their confidence intervals are taken into account. This is a position in a distribution, not a league table."
             >
               <InlineSvgChart

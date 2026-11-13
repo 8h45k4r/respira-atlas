@@ -309,6 +309,14 @@ function ExploreBody({
               source: selection.indicator.dataSource ?? 'Not stated',
             }}
             coverageLabel={`${selection.indicator.coverage.nations.join(', ')} coverage`}
+            caveats={[
+              ...(analysis.viewModel.counts.outsideCoverage > 0
+                ? [{ kind: 'coverage' as const, label: `${selection.indicator.coverage.nations.join(' and ')} only` }]
+                : []),
+              { kind: 'areas', label: 'Area-level, not people' },
+              { kind: 'not-causal', label: 'Pattern, not cause' },
+              { kind: 'recording', label: 'Reflects recording too' },
+            ]}
             limitation={
               <>
                 {analysis.viewModel.coverageNote
@@ -391,6 +399,9 @@ function ExploreBody({
               observation={analysis.selectedObservation}
               benchmark={analysis.benchmarkObservation}
               flagLevel={observations.flagLevel}
+              observations={observations}
+              sex={analysis.sex}
+              periodSeries={analysis.periodSeries}
               indicator={selection.indicator}
               evidence={analysis.evidence}
               period={analysis.period}
@@ -403,35 +414,23 @@ function ExploreBody({
             <div className="panel p-4">
               <h2 className="text-sm font-semibold text-oxford-900">Select a place</h2>
               <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-                Choose an area on the map, search for a place, or pick a row in the data
-                table. The data table is fully keyboard-operable and does everything the
-                map does.
+                Click the map, search, or use the keyboard-friendly data table.
               </p>
-              <dl className="mt-3 space-y-1.5 font-figure text-2xs">
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-500">Areas with a value</dt>
-                  <dd className="tabular-nums text-oxford-900">
-                    {analysis.viewModel.counts.withValue}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-500">No value published</dt>
-                  <dd className="tabular-nums text-oxford-900">
-                    {analysis.viewModel.counts.missing}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-500">Suppressed</dt>
-                  <dd className="tabular-nums text-oxford-900">
-                    {analysis.viewModel.counts.suppressed}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-500">Outside dataset coverage</dt>
-                  <dd className="tabular-nums text-oxford-900">
-                    {analysis.viewModel.counts.outsideCoverage}
-                  </dd>
-                </div>
+              <dl className="mt-3 grid grid-cols-2 gap-1.5">
+                {([
+                  ['With a value', analysis.viewModel.counts.withValue, 'bg-oxford-700'],
+                  ['No value published', analysis.viewModel.counts.missing, 'bg-slate-200'],
+                  ['Suppressed', analysis.viewModel.counts.suppressed, 'bg-slate-300'],
+                  ['Outside dataset coverage', analysis.viewModel.counts.outsideCoverage, 'bg-slate-100'],
+                ] as const).map(([label, count, swatch]) => (
+                  <div key={label} className="flex flex-col-reverse rounded-md border border-slate-200 bg-white px-2 py-1.5">
+                    <dt className="mt-1 font-figure text-2xs text-slate-500">{label}</dt>
+                    <dd className="flex items-center gap-1.5 text-lg font-semibold tabular-nums leading-none text-oxford-900">
+                      <span aria-hidden className={`h-2.5 w-2.5 rounded-sm border border-slate-300 ${swatch}`} />
+                      {count}
+                    </dd>
+                  </div>
+                ))}
               </dl>
             </div>
           )}

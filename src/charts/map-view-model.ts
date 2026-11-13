@@ -47,6 +47,8 @@ export interface MapLegendEntry {
   readonly count: number | null;
   readonly kind: 'class' | 'non-data';
   readonly pattern: 'none' | 'hatch' | 'diagonal';
+  /** Class bounds, for a compact on-screen key; absent for non-data entries. */
+  readonly range?: readonly [number, number];
 }
 
 export interface MapViewModel {
@@ -222,6 +224,7 @@ export function buildMapViewModel(input: BuildMapViewModelInput): MapViewModel {
         count: bin.count,
         kind: 'class',
         pattern: 'none',
+        range: [bin.lower, bin.upper],
       });
     });
   }
