@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { Catalogue } from '@/hooks/useAtlasCatalogue';
 import type { AtlasState } from '@/state/atlas-state';
 import type { ObservationSet } from '@/data/loader';
@@ -8,7 +8,8 @@ import { renderTimeSeriesSvg, type TimeSeriesLine } from '@/export/chart-svg';
 import { InlineSvgChart } from '@/charts/InlineSvgChart';
 import { FigureFrame } from '@/components/common/FigureFrame';
 import { UnsupportedState } from '@/components/common/states';
-import { CHART_INK, SELECTION } from '@/charts/palette';
+import { selectionColour, selectionOrder } from '@/charts/palette';
+import { buildTrendLines } from '@/charts/trend-lines';
 import { downloadSvg } from '@/export/download';
 import { slug } from '@/lib/utils';
 
@@ -31,44 +32,28 @@ export function TrendFigure({
 }) {
   const { indicator } = selection;
   const series = analysis.periodSeries;
-  const codes = [
-    ...(state.selectedAreaCode ? [state.selectedAreaCode] : []),
-    ...state.comparisonAreaCodes.filter((code) => code !== state.selectedAreaCode),
-  ];
+  const codes = selectionOrder(state.selectedAreaCode, state.comparisonAreaCodes);
 
-  const lines: TimeSeriesLine[] = codes.map((code, index) => ({
-    label: registry.get(code)?.name ?? code,
-    colour: SELECTION.comparisonStrokes[index % SELECTION.comparisonStrokes.length],
-    points: series.periods.map((period) => ({
-      period,
-      observation:
-        observations.byArea.get(code)?.get(period) ??
-        ({
-          areaCode: code, period, sex: observations.sex, age: observations.age,
-          categoryType: null, category: null, state: 'missing' as const,
-          significance: 'not-compared' as const, trend: 'not-available' as const, note: null,
-        }),
+  // The selected area and England carry their interval bands; further compared
+  // areas are drawn as lines only, so up to five series stay legible.
+  const codesKey = codes.join(',');
+  const hasBenchmark = Boolean(analysis.benchmarkObservation);
+  const { benchmark } = catalogue.manifest.coverage;
+  const lines: TimeSeriesLine[] = useMemo(() => buildTrendLines({
+    observations,
+    sex: analysis.sex,
+    periods: series.periods,
+    areas: codes.map((code, index) => ({
+      code,
+      label: registry.get(code)?.name ?? code,
+      colour: selectionColour(index),
+      showInterval: index === 0,
     })),
-  }));
-
-  if (analysis.benchmarkObservation) {
-    lines.push({
-      label: catalogue.manifest.coverage.benchmark.label,
-      colour: CHART_INK.benchmark,
-      dashed: true,
-      points: series.periods.map((period) => ({
-        period,
-        observation:
-          observations.benchmarkByPeriod.get(period) ??
-          ({
-            areaCode: catalogue.manifest.coverage.benchmark.areaCode, period,
-            sex: observations.sex, age: observations.age,
-            categoryType: null, category: null, state: 'missing' as const,
-            significance: 'not-compared' as const, trend: 'not-available' as const, note: null,
-          }),
-      })),
-    });
-  }
+    benchmark: hasBenchmark
+      ? { label: benchmark.label, areaCode: benchmark.areaCode, showInterval: true }
+      : null,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [observations, analysis.sex, series.periods, codesKey, registry, hasBenchmark, benchmark]);
 
   const title = state.selectedAreaCode
     ? `How has ${indicator.shortName.toLowerCase()} changed in ${
@@ -84,11 +69,11 @@ export function TrendFigure({
     (width: number) =>
       renderTimeSeriesSvg({
         series: lines, periods: series.periods, indicator, title, subtitle,
-        notes: null, showIntervals: codes.length <= 2, pooledYears: series.years,
+        notes: null, pooledYears: series.years,
         width, height: 230, standalone: false,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lines, series, indicator, title, subtitle, codes.length],
+    [lines, series, indicator, title, subtitle],
   );
 
   if (series.periods.length < 2) {
@@ -140,7 +125,7 @@ export function TrendFigure({
         downloadSvg(
           renderTimeSeriesSvg({
             series: lines, periods: series.periods, indicator, title, subtitle,
-            notes: analysis.notes, showIntervals: codes.length <= 2,
+            notes: analysis.notes,
             pooledYears: series.years, width: 900, height: 320,
           }),
           `${slug(indicator.shortName)}-trend-${slug(selection.areaType.key)}`,

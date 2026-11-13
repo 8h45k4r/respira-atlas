@@ -2,7 +2,8 @@ import type { Indicator } from '@/data/schemas/manifest';
 import type { Observation, PresentObservation } from '@/data/schemas/observation';
 import { isPresent, hasInterval } from '@/data/schemas/observation';
 import { formatValue, unitLabel } from '@/data/selectors/format';
-import { CHART_INK, SELECTION } from '@/charts/palette';
+import { CHART_INK, SELECTION, selectionColour } from '@/charts/palette';
+import { axisRuleFor, valueDomain } from '@/charts/axis-rules';
 import {
   svgDocument, text, rect, line, path, circle, group, paragraph,
   round, escapeXml,
@@ -101,7 +102,77 @@ function footer(
 }
 
 // ---------------------------------------------------------------------------
-// Dot-and-whisker comparison
+// Shared layout helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Approximate rendered width of IBM Plex Sans text. SVG strings are built
+ * without a DOM, so layout uses a measured average advance (0.56em) and errs
+ * wide; labels are truncated rather than allowed to collide.
+ */
+export function textWidth(content: string, size: number): number {
+  return content.length * size * 0.56;
+}
+
+export function truncateToWidth(content: string, maxWidth: number, size: number): string {
+  if (textWidth(content, size) <= maxWidth) return content;
+  const keep = Math.max(1, Math.floor(maxWidth / (size * 0.56)) - 1);
+  return `${content.slice(0, keep).trimEnd()}…`;
+}
+
+/** Tick labels carry only the precision the tick step needs ("80", not "80.0"). */
+function formatTick(value: number, step: number): string {
+  const decimals = Math.max(0, Math.min(3, -Math.floor(Math.log10(step) + 1e-9)));
+  return value.toLocaleString('en-GB', {
+    minimumFractionDigits: decimals, maximumFractionDigits: decimals,
+  });
+}
+
+function ticksFromDomain(domain: readonly [number, number], step: number): number[] {
+  const ticks: number[] = [];
+  for (let value = domain[0]; value <= domain[1] + step * 1e-6; value += step) {
+    ticks.push(Number(value.toFixed(10)));
+  }
+  return ticks;
+}
+
+function chartHeader(
+  title: string, subtitle: string, width: number, scale: (typeof TEXT_SCALES)['standard'],
+): { svg: string[]; height: number } {
+  const svg: string[] = [];
+  let cursor = 0;
+  const titleWrapped = paragraph(title, {
+    x: 0, y: scale.title, size: scale.title, weight: 600, fill: '#141f36',
+    maxWidth: width, lineHeight: scale.title * 1.3,
+  });
+  svg.push(titleWrapped.svg);
+  cursor += titleWrapped.height + 2;
+  const subWrapped = paragraph(subtitle, {
+    x: 0, y: cursor + scale.small, size: scale.small, fill: '#475569',
+    maxWidth: width, lineHeight: scale.small * 1.4,
+  });
+  svg.push(subWrapped.svg);
+  cursor += subWrapped.height + 12;
+  return { svg, height: cursor };
+}
+
+/** Text colour for a mark colour: brass marks get darker brass type for contrast. */
+function inkFor(colour: string): string {
+  return colour === SELECTION.stroke ? SELECTION.text : colour;
+}
+
+function wrapSvg(
+  content: string, width: number, height: number, standalone: boolean | undefined,
+  title: string, description: string,
+): string {
+  if (standalone === false) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${round(height)}" viewBox="0 0 ${width} ${round(height)}" role="img" aria-label="${escapeXml(title)}">${content}</svg>`;
+  }
+  return svgDocument(content, { width, height: round(height), title, description });
+}
+
+// ---------------------------------------------------------------------------
+// Dot-and-interval ranking
 // ---------------------------------------------------------------------------
 
 export interface DotWhiskerRow {
@@ -110,6 +181,10 @@ export interface DotWhiskerRow {
   readonly observation: Observation;
   readonly isSelected: boolean;
   readonly selectionIndex: number | null;
+  /** Position in the full distribution (1 = highest value). Drawn when given. */
+  readonly rank?: number | null;
+  /** Rows were skipped before this one; a break is drawn so the gap is visible. */
+  readonly gapBefore?: boolean;
 }
 
 export interface DotWhiskerOptions {
@@ -123,22 +198,74 @@ export interface DotWhiskerOptions {
   readonly textScale?: keyof typeof TEXT_SCALES;
   readonly width?: number;
   readonly standalone?: boolean;
+  /**
+   * Draw the publisher's own significance flag against England as the dot's
+   * fill: solid = flagged different, hollow = flagged similar, bar = not compared.
+   * Only meaningful when rows are areas compared with the England benchmark.
+   */
+  readonly encodeSignificance?: boolean;
+  /** Total ranked areas, shown in the rank column header ("of 151"). */
+  readonly rankTotal?: number | null;
+  /** Emit `data-area-code` hit targets so the page can make rows clickable. */
+  readonly interactive?: boolean;
+}
+
+type SignificanceGlyph = 'different' | 'similar' | 'not-compared';
+
+function glyphFor(observation: PresentObservation): SignificanceGlyph {
+  switch (observation.significance) {
+    case 'better': case 'worse': case 'higher': case 'lower':
+      return 'different';
+    case 'similar':
+      return 'similar';
+    default:
+      return 'not-compared';
+  }
+}
+
+function drawGlyph(
+  glyph: SignificanceGlyph, cx: number, cy: number, r: number, colour: string,
+): string {
+  if (glyph === 'similar') {
+    return circle(cx, cy, r, { fill: '#ffffff', stroke: colour, strokeWidth: 1.7 });
+  }
+  if (glyph === 'not-compared') {
+    return line(cx, cy - r - 1, cx, cy + r + 1, { stroke: colour, strokeWidth: 2.4 });
+  }
+  return circle(cx, cy, r, { fill: colour, stroke: '#ffffff', strokeWidth: 1 });
 }
 
 /**
- * Dot-and-whisker chart, drawn only where the publisher supplies intervals.
+ * Sorted dot-and-interval chart.
  *
- * Rows without an interval are drawn as a point with an explicit "no interval
- * published" marker rather than as a bare dot that could be mistaken for a
- * precise estimate.
+ * Each row is a point estimate with its published 95% interval, positioned
+ * against the England reference line. Rows without an interval say so in
+ * words rather than appearing as falsely precise bare dots. The selected area
+ * sits on a brass wash so it can be found without relying on hue.
  */
 export function renderDotWhiskerSvg(options: DotWhiskerOptions): string {
   const scale = TEXT_SCALES[options.textScale ?? 'standard'];
   const { rows, indicator } = options;
   const width = options.width ?? 860;
-  const labelWidth = Math.min(260, Math.max(150, width * 0.28));
-  const rowHeight = Math.max(scale.body * 2.1, 26);
-  const margin = { top: 0, right: 64, bottom: 44, left: labelWidth + 12 };
+  const labelSize = scale.body * 0.95;
+  const valueSize = scale.body * 0.9;
+  const rowHeight = Math.max(scale.body * 2.1, 24);
+  const gapHeight = rowHeight * 0.55;
+
+  const showRanks = rows.some((row) => row.rank !== undefined && row.rank !== null);
+  const rankWidth = showRanks ? textWidth('000', valueSize) + 10 : 0;
+  const labelWidth = Math.min(230, Math.max(120, width * 0.27));
+
+  const valueText = (row: DotWhiskerRow): string => {
+    if (!isPresent(row.observation)) return '';
+    return hasInterval(row.observation)
+      ? formatValue(row.observation.value, indicator)
+      : `${formatValue(row.observation.value, indicator)} (no interval)`;
+  };
+  const valueColumn = Math.max(
+    44, ...rows.map((row) => textWidth(valueText(row), valueSize) + 10),
+  );
+  const margin = { left: rankWidth + labelWidth + 12, right: Math.min(150, valueColumn) };
 
   const values: number[] = [];
   for (const row of rows) {
@@ -151,150 +278,204 @@ export function renderDotWhiskerSvg(options: DotWhiskerOptions): string {
   }
   if (options.benchmark) values.push(options.benchmark.value);
 
-  const plotWidth = width - margin.left - margin.right;
-  const plotHeight = rows.length * rowHeight;
+  const plotWidth = Math.max(80, width - margin.left - margin.right);
   const x = linearScale(domainFor(values), [0, plotWidth]);
 
-  let cursor = 0;
-  const header: string[] = [];
-  if (options.standalone !== false) {
-    const titleWrapped = paragraph(options.title, {
-      x: 0, y: scale.title, size: scale.title, weight: 600, fill: '#141f36',
-      maxWidth: width, lineHeight: scale.title * 1.3,
-    });
-    header.push(titleWrapped.svg);
-    cursor += titleWrapped.height + 2;
-    const subWrapped = paragraph(options.subtitle, {
-      x: 0, y: cursor + scale.small, size: scale.small, fill: '#475569',
-      maxWidth: width, lineHeight: scale.small * 1.4,
-    });
-    header.push(subWrapped.svg);
-    cursor += subWrapped.height + 12;
-  }
+  const header = options.standalone !== false
+    ? chartHeader(options.title, options.subtitle, width, scale)
+    : { svg: [], height: 0 };
 
-  const plotTop = cursor;
+  // Header row: rank caption and the England reference label share one line.
+  const plotTop = header.height + scale.small * 2.2;
+  const rowTops: number[] = [];
+  let rowCursor = plotTop;
+  for (const row of rows) {
+    if (row.gapBefore) rowCursor += gapHeight;
+    rowTops.push(rowCursor);
+    rowCursor += rowHeight;
+  }
+  const plotBottom = rowCursor;
+
   const body: string[] = [];
 
-  // Gridlines and x axis.
-  const ticks = niceTicks(x.domain[0], x.domain[1], 5);
-  for (const tick of ticks) {
-    body.push(
-      line(margin.left + x(tick), plotTop, margin.left + x(tick), plotTop + plotHeight, {
-        stroke: CHART_INK.grid, strokeWidth: 1,
-      }),
-    );
-    body.push(
-      text(formatValue(tick, indicator), {
-        x: margin.left + x(tick),
-        y: plotTop + plotHeight + scale.small * 1.8,
-        size: scale.small, fill: CHART_INK.axis, anchor: 'middle',
-      }),
-    );
+  if (showRanks) {
+    body.push(text(options.rankTotal ? `Rank of ${options.rankTotal}` : 'Rank', {
+      x: 0, y: plotTop - scale.small * 0.8, size: scale.small * 0.92,
+      fill: CHART_INK.mutedText,
+    }));
   }
-  body.push(
-    text(unitLabel(indicator) || 'value', {
-      x: margin.left + plotWidth / 2,
-      y: plotTop + plotHeight + scale.small * 3.4,
-      size: scale.small, fill: CHART_INK.mutedText, anchor: 'middle', weight: 500,
-    }),
-  );
 
-  // Benchmark reference line, drawn behind the dots and labelled.
+  // Ticks, thinned so no two labels can touch at this width.
+  const domainTicks = niceTicks(x.domain[0], x.domain[1], 6);
+  const probeStep = domainTicks.length > 1 ? domainTicks[1] - domainTicks[0] : 1;
+  const widestTick = Math.max(...domainTicks.map((t) => textWidth(formatTick(t, probeStep), scale.small)));
+  const maxTicks = Math.max(2, Math.floor(plotWidth / (widestTick + 18)));
+  const ticks = niceTicks(x.domain[0], x.domain[1], Math.min(5, maxTicks));
+  const tickStep = ticks.length > 1 ? ticks[1] - ticks[0] : 1;
+
+  // Selected-row wash sits under everything else.
+  rows.forEach((row, index) => {
+    if (row.isSelected) {
+      body.push(rect(0, rowTops[index] + 1, width, rowHeight - 2, { fill: SELECTION.rowWash, rx: 3 }));
+    }
+  });
+
+  for (const tick of ticks) {
+    body.push(line(margin.left + x(tick), plotTop, margin.left + x(tick), plotBottom, {
+      stroke: CHART_INK.grid, strokeWidth: 1,
+    }));
+    body.push(text(formatTick(tick, tickStep), {
+      x: margin.left + x(tick), y: plotBottom + scale.small * 1.6,
+      size: scale.small, fill: CHART_INK.axis, anchor: 'middle',
+    }));
+  }
+  body.push(text(unitLabel(indicator) || 'value', {
+    x: margin.left + plotWidth / 2, y: plotBottom + scale.small * 3.1,
+    size: scale.small, fill: CHART_INK.mutedText, anchor: 'middle', weight: 500,
+  }));
+
+  // Gap markers: a short dotted rule in the label column.
+  rows.forEach((row, index) => {
+    if (!row.gapBefore) return;
+    const gy = rowTops[index] - gapHeight / 2;
+    body.push(line(rankWidth, gy, rankWidth + labelWidth, gy, {
+      stroke: '#b9b5af', strokeWidth: 1, dash: '1.5 3',
+    }));
+  });
+
   if (options.benchmark) {
     const bx = margin.left + x(options.benchmark.value);
-    body.push(
-      line(bx, plotTop - 4, bx, plotTop + plotHeight, {
-        stroke: CHART_INK.benchmark, strokeWidth: 1.4, dash: '4 3',
-      }),
-    );
-    body.push(
-      text(
-        `${options.benchmarkLabel} ${formatValue(options.benchmark.value, indicator)}`,
-        {
-          x: bx + 4, y: plotTop - 6, size: scale.small,
-          fill: CHART_INK.benchmark, weight: 600,
-        },
-      ),
-    );
+    body.push(line(bx, plotTop - 2, bx, plotBottom, {
+      stroke: CHART_INK.benchmark, strokeWidth: 1.4, dash: '4 3',
+    }));
+    const label = `${options.benchmarkLabel} ${formatValue(options.benchmark.value, indicator)}`;
+    const nearRight = bx + textWidth(label, scale.small) + 4 > margin.left + plotWidth;
+    body.push(text(label, {
+      x: nearRight ? bx - 4 : bx + 4, y: plotTop - scale.small * 0.8, size: scale.small,
+      fill: CHART_INK.benchmark, weight: 600, anchor: nearRight ? 'end' : 'start',
+    }));
   }
 
-  rows.forEach((row, index) => {
-    const cy = plotTop + index * rowHeight + rowHeight / 2;
-    const stroke =
-      row.selectionIndex !== null
-        ? SELECTION.comparisonStrokes[row.selectionIndex % SELECTION.comparisonStrokes.length]
-        : CHART_INK.series;
+  const glyphsUsed = new Set<SignificanceGlyph>();
 
-    body.push(
-      text(row.areaName, {
-        x: labelWidth, y: cy + scale.body * 0.34, size: scale.body * 0.95,
-        fill: row.isSelected ? '#141f36' : '#334155',
-        weight: row.isSelected ? 600 : 400, anchor: 'end',
-      }),
-    );
+  rows.forEach((row, index) => {
+    const top = rowTops[index];
+    const cy = top + rowHeight / 2;
+    const colour = row.selectionIndex !== null ? selectionColour(row.selectionIndex) : CHART_INK.series;
+    const emphasised = row.selectionIndex !== null;
+
+    if (showRanks && row.rank !== undefined && row.rank !== null) {
+      body.push(text(String(row.rank), {
+        x: rankWidth - 8, y: cy + valueSize * 0.34, size: valueSize,
+        fill: row.isSelected ? SELECTION.text : CHART_INK.mutedText,
+        anchor: 'end', weight: row.isSelected ? 600 : 400,
+      }));
+    }
+
+    body.push(text(truncateToWidth(row.areaName, labelWidth - 4, labelSize), {
+      x: rankWidth + labelWidth, y: cy + labelSize * 0.34, size: labelSize,
+      fill: emphasised ? inkFor(colour) : '#334155',
+      weight: emphasised ? 600 : 400, anchor: 'end',
+    }));
+
+    if (options.interactive) {
+      body.push(
+        `<rect x="0" y="${round(top)}" width="${width}" height="${round(rowHeight)}" ` +
+          `fill="transparent" data-area-code="${escapeXml(row.areaCode)}" style="cursor:pointer">` +
+          `<title>${escapeXml(row.areaName)}</title></rect>`,
+      );
+    }
 
     if (!isPresent(row.observation)) {
       const reason =
         row.observation.state === 'suppressed' ? 'Suppressed by publisher'
         : row.observation.state === 'not-applicable' ? 'Not applicable'
         : 'No value published';
-      body.push(
-        text(reason, {
-          x: margin.left + 2, y: cy + scale.body * 0.34,
-          size: scale.body * 0.9, fill: '#94a3b8',
-        }),
-      );
+      body.push(text(reason, {
+        x: margin.left + 2, y: cy + valueSize * 0.34, size: valueSize, fill: '#6b6864',
+      }));
       return;
     }
 
     if (hasInterval(row.observation)) {
       const x1 = margin.left + x(row.observation.lowerCi95);
       const x2 = margin.left + x(row.observation.upperCi95);
-      body.push(line(x1, cy, x2, cy, { stroke, strokeWidth: 1.6 }));
-      body.push(line(x1, cy - 4, x1, cy + 4, { stroke, strokeWidth: 1.6 }));
-      body.push(line(x2, cy - 4, x2, cy + 4, { stroke, strokeWidth: 1.6 }));
+      const weight = emphasised ? 2 : 1.3;
+      body.push(line(x1, cy, x2, cy, { stroke: colour, strokeWidth: weight, opacity: emphasised ? 1 : 0.75 }));
+      body.push(line(x1, cy - 3.5, x1, cy + 3.5, { stroke: colour, strokeWidth: weight, opacity: emphasised ? 1 : 0.75 }));
+      body.push(line(x2, cy - 3.5, x2, cy + 3.5, { stroke: colour, strokeWidth: weight, opacity: emphasised ? 1 : 0.75 }));
     }
 
-    body.push(
-      circle(margin.left + x(row.observation.value), cy, row.isSelected ? 4.6 : 3.6, {
-        fill: stroke, stroke: '#ffffff', strokeWidth: 1,
-      }),
-    );
+    const cx = margin.left + x(row.observation.value);
+    const r = emphasised ? 4.8 : 3.8;
+    if (options.encodeSignificance) {
+      const glyph = glyphFor(row.observation);
+      glyphsUsed.add(glyph);
+      body.push(drawGlyph(glyph, cx, cy, r, colour));
+    } else {
+      body.push(circle(cx, cy, r, { fill: colour, stroke: '#ffffff', strokeWidth: 1 }));
+    }
 
-    body.push(
-      text(
-        hasInterval(row.observation)
-          ? formatValue(row.observation.value, indicator)
-          : `${formatValue(row.observation.value, indicator)} (no interval published)`,
-        {
-          x: margin.left + plotWidth + 6, y: cy + scale.body * 0.34,
-          size: scale.body * 0.9, fill: '#334155',
-        },
-      ),
-    );
+    body.push(text(valueText(row), {
+      x: margin.left + plotWidth + 8, y: cy + valueSize * 0.34, size: valueSize,
+      fill: emphasised ? inkFor(colour) : '#334155', weight: emphasised ? 600 : 400,
+    }));
   });
 
-  const legendY = plotTop + plotHeight + scale.small * 4.6;
-  body.push(
-    text(
-      'Bars show the 95% confidence interval published with each estimate. ' +
-        'Overlapping intervals are not a significance test.',
-      { x: 0, y: legendY, size: scale.small, fill: '#64748b' },
-    ),
-  );
-
-  const footerBlock = footer(options.notes, 0, legendY + scale.small * 1.6, width, scale.small);
-  const height = legendY + scale.small * 1.6 + footerBlock.height + 8;
-
-  const content = [...header, group(body.join('\n')), footerBlock.svg].join('\n');
-  if (options.standalone === false) {
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${round(height)}" viewBox="0 0 ${width} ${round(height)}" role="img" aria-label="${escapeXml(options.title)}">${content}</svg>`;
+  // Drawn key: what the marks mean, as marks.
+  let keyY = plotBottom + scale.small * 4.8;
+  const keyItems: { glyph: string; label: string }[] = [];
+  const keySize = scale.small;
+  const kc = CHART_INK.series;
+  keyItems.push({
+    glyph:
+      line(0, -keySize * 0.35, 18, -keySize * 0.35, { stroke: kc, strokeWidth: 1.3 }) +
+      line(0, -keySize * 0.35 - 3.5, 0, -keySize * 0.35 + 3.5, { stroke: kc, strokeWidth: 1.3 }) +
+      line(18, -keySize * 0.35 - 3.5, 18, -keySize * 0.35 + 3.5, { stroke: kc, strokeWidth: 1.3 }),
+    label: '95% confidence interval',
+  });
+  if (options.encodeSignificance) {
+    if (glyphsUsed.has('different')) {
+      keyItems.push({ glyph: drawGlyph('different', 9, -keySize * 0.35, 3.8, kc), label: 'Different from England (publisher’s flag)' });
+    }
+    if (glyphsUsed.has('similar')) {
+      keyItems.push({ glyph: drawGlyph('similar', 9, -keySize * 0.35, 3.8, kc), label: 'Similar to England' });
+    }
+    if (glyphsUsed.has('not-compared')) {
+      keyItems.push({ glyph: drawGlyph('not-compared', 9, -keySize * 0.35, 3.8, kc), label: 'Not compared by the publisher' });
+    }
   }
-  return svgDocument(content, {
-    width, height: round(height),
-    title: options.title,
-    description: `${options.subtitle}. ${rows.length} areas compared with ${options.benchmarkLabel}.`,
-  });
+  let keyX = 0;
+  for (const item of keyItems) {
+    const itemWidth = 24 + textWidth(item.label, keySize) + 16;
+    if (keyX > 0 && keyX + itemWidth > width) {
+      keyX = 0;
+      keyY += keySize * 1.7;
+    }
+    body.push(group(item.glyph, `translate(${round(keyX)}, ${round(keyY)})`));
+    body.push(text(item.label, { x: keyX + 24, y: keyY, size: keySize, fill: '#475569' }));
+    keyX += itemWidth;
+  }
+
+  let afterKey = keyY + keySize * 0.8;
+  if (options.standalone !== false) {
+    const caveat = paragraph(
+      'Overlapping intervals are not a significance test, and non-overlap is not proof of a difference. ' +
+        'Ranks describe position in the distribution, not performance.',
+      { x: 0, y: afterKey + keySize * 1.4, size: keySize, fill: '#64748b', maxWidth: width, lineHeight: keySize * 1.36 },
+    );
+    body.push(caveat.svg);
+    afterKey += caveat.height + keySize * 0.6;
+  }
+
+  const footerBlock = footer(options.notes, 0, afterKey + 8, width, scale.small);
+  const height = afterKey + 8 + footerBlock.height + 6;
+
+  const content = [...header.svg, group(body.join('\n')), footerBlock.svg].join('\n');
+  return wrapSvg(
+    content, width, height, options.standalone, options.title,
+    `${options.subtitle}. ${rows.length} areas compared with ${options.benchmarkLabel}.`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -305,6 +486,8 @@ export interface TimeSeriesLine {
   readonly label: string;
   readonly colour: string;
   readonly dashed?: boolean;
+  /** Draw this line's published 95% interval as a band. Defaults to `showIntervals`. */
+  readonly showInterval?: boolean;
   readonly points: readonly { period: string; observation: Observation }[];
 }
 
@@ -328,208 +511,325 @@ export interface TimeSeriesOptions {
 /**
  * Time-series chart.
  *
- * Gaps are drawn as gaps: a period with no value breaks the line rather than
- * being interpolated across, because a connected line across a gap asserts data
- * that do not exist. Pooled periods are labelled as overlapping.
+ * - The value axis follows the indicator's axis rule (see `axis-rules.ts`): a
+ *   zero baseline for rates and proportions, a fitted axis with a drawn break
+ *   for level measures such as life expectancy.
+ * - Lines are labelled directly at their ends; there is no legend to match up.
+ * - Period labels are horizontal and thinned to fit; every period keeps a tick.
+ * - Gaps are drawn as gaps: a period with no value breaks the line rather than
+ *   being interpolated across, because a connected line across a gap asserts
+ *   data that do not exist.
  */
 export function renderTimeSeriesSvg(options: TimeSeriesOptions): string {
   const scale = TEXT_SCALES[options.textScale ?? 'standard'];
   const width = options.width ?? 860;
-  const plotHeightTarget = options.height ?? 300;
-  const margin = { top: 10, right: 16, bottom: 52, left: 62 };
+  const plotHeight = options.height ?? 300;
+  const { indicator, periods } = options;
+  const bandOf = (series: TimeSeriesLine) => series.showInterval ?? options.showIntervals ?? false;
 
   const values: number[] = [];
   for (const series of options.series) {
     for (const point of series.points) {
-      if (isPresent(point.observation)) {
-        values.push(point.observation.value);
-        if (options.showIntervals && hasInterval(point.observation)) {
-          values.push(point.observation.lowerCi95, point.observation.upperCi95);
-        }
+      if (!isPresent(point.observation)) continue;
+      values.push(point.observation.value);
+      if (bandOf(series) && hasInterval(point.observation)) {
+        values.push(point.observation.lowerCi95, point.observation.upperCi95);
       }
     }
   }
 
-  let cursor = 0;
-  const header: string[] = [];
-  if (options.standalone !== false) {
-    const titleWrapped = paragraph(options.title, {
-      x: 0, y: scale.title, size: scale.title, weight: 600, fill: '#141f36',
-      maxWidth: width, lineHeight: scale.title * 1.3,
-    });
-    header.push(titleWrapped.svg);
-    cursor += titleWrapped.height + 2;
-    const subWrapped = paragraph(options.subtitle, {
-      x: 0, y: cursor + scale.small, size: scale.small, fill: '#475569',
-      maxWidth: width, lineHeight: scale.small * 1.4,
-    });
-    header.push(subWrapped.svg);
-    cursor += subWrapped.height + 10;
-  }
+  const rule = axisRuleFor(indicator);
+  const { domain, step, broken } = valueDomain(values, rule, plotHeight < 220 ? 4 : 5);
+  const ticks = ticksFromDomain(domain, step);
+  const tickLabels = ticks.map((tick) => formatTick(tick, step));
 
-  const plotTop = cursor + margin.top;
-  const plotWidth = width - margin.left - margin.right;
-  const plotHeight = plotHeightTarget;
-
-  const xStep = options.periods.length > 1 ? plotWidth / (options.periods.length - 1) : 0;
-  const xOf = (period: string) => {
-    const index = options.periods.indexOf(period);
-    return index < 0 ? null : margin.left + index * xStep;
+  // End-of-line labels decide the right margin.
+  const labelSize = scale.small;
+  const ends = options.series.map((series) => {
+    const present = series.points.filter((point) => isPresent(point.observation));
+    const last = present[present.length - 1];
+    return {
+      series,
+      last: last && isPresent(last.observation)
+        ? { period: last.period, value: last.observation.value }
+        : null,
+    };
+  });
+  const rightCap = Math.max(96, Math.min(width * 0.3, 200));
+  const rightWidth = Math.min(
+    rightCap,
+    Math.max(
+      60,
+      ...ends.map((end) =>
+        end.last
+          ? textWidth(`${end.series.label} ${formatValue(end.last.value, indicator)}`, labelSize) + 14
+          : 0,
+      ),
+    ),
+  );
+  const margin = {
+    left: Math.max(...tickLabels.map((label) => textWidth(label, scale.small))) + 12,
+    right: rightWidth,
   };
-  const y = linearScale(domainFor(values, { includeZero: true }), [plotTop + plotHeight, plotTop]);
+  const plotWidth = Math.max(80, width - margin.left - margin.right);
+
+  const header = options.standalone !== false
+    ? chartHeader(options.title, options.subtitle, width, scale)
+    : { svg: [], height: 0 };
 
   const body: string[] = [];
 
-  for (const tick of niceTicks(y.domain[0], y.domain[1], 5)) {
-    body.push(
-      line(margin.left, y(tick), margin.left + plotWidth, y(tick), {
-        stroke: CHART_INK.grid, strokeWidth: 1,
-      }),
-    );
-    body.push(
-      text(formatValue(tick, options.indicator), {
-        x: margin.left - 7, y: y(tick) + scale.small * 0.36,
-        size: scale.small, fill: CHART_INK.axis, anchor: 'end',
-      }),
-    );
+  // Unit line above the axis (horizontal, never rotated), with the axis-break
+  // statement next to it when the axis does not start at zero.
+  const unitY = header.height + scale.small;
+  const unit = unitLabel(indicator) || 'value';
+  body.push(text(unit, {
+    x: 0, y: unitY, size: scale.small, fill: CHART_INK.mutedText, weight: 600,
+  }));
+  if (broken) {
+    body.push(text(`· axis starts at ${tickLabels[0]}, not zero`, {
+      x: textWidth(unit, scale.small) + 6, y: unitY, size: scale.small, fill: CHART_INK.mutedText,
+    }));
   }
 
-  // Rotated y-axis title.
-  body.push(
-    `<text transform="translate(${round(scale.small * 1.1)}, ${round(plotTop + plotHeight / 2)}) rotate(-90)" ` +
-      `text-anchor="middle" font-family="'IBM Plex Sans', Helvetica, Arial, sans-serif" ` +
-      `font-size="${scale.small}" font-weight="500" fill="${CHART_INK.mutedText}">` +
-      `${escapeXml(unitLabel(options.indicator) || 'value')}</text>`,
-  );
+  const plotTop = unitY + scale.small * 1.1;
+  const plotBottom = plotTop + plotHeight;
+  const plotRight = margin.left + plotWidth;
+  const y = linearScale(domain, [plotBottom, plotTop]);
 
-  // Period labels, thinned so they never collide.
-  const labelEvery = Math.max(1, Math.ceil(options.periods.length / Math.floor(plotWidth / 54)));
-  options.periods.forEach((period, index) => {
-    if (index % labelEvery !== 0 && index !== options.periods.length - 1) return;
-    const px = margin.left + index * xStep;
-    body.push(
-      `<text transform="translate(${round(px)}, ${round(plotTop + plotHeight + scale.small * 1.5)}) rotate(-35)" ` +
-        `text-anchor="end" font-family="'IBM Plex Sans', Helvetica, Arial, sans-serif" ` +
-        `font-size="${scale.small * 0.92}" fill="${CHART_INK.axis}">${escapeXml(period)}</text>`,
-    );
+  const xStep = periods.length > 1 ? plotWidth / (periods.length - 1) : 0;
+  const xOf = (period: string) => {
+    const index = periods.indexOf(period);
+    return index < 0 ? null : margin.left + index * xStep;
+  };
+
+  ticks.forEach((tick, index) => {
+    const isZero = tick === 0;
+    body.push(line(margin.left, y(tick), plotRight, y(tick), {
+      stroke: isZero ? '#a8a49e' : CHART_INK.grid, strokeWidth: isZero ? 1.2 : 1,
+    }));
+    body.push(text(tickLabels[index], {
+      x: margin.left - 6, y: y(tick) + scale.small * 0.36,
+      size: scale.small, fill: CHART_INK.axis, anchor: 'end',
+    }));
   });
 
-  // Methodology breaks are marked, not smoothed over.
+  if (broken) {
+    // Axis break: the baseline is cut and two short slashes mark the cut, just
+    // inside the plot so the lowest tick label stays clear.
+    const bx = margin.left + 9;
+    const by = plotBottom;
+    body.push(rect(bx - 5, by - 4, 10, 8, { fill: '#ffffff' }));
+    body.push(path(`M ${round(bx - 5)} ${round(by + 3)} L ${round(bx - 1)} ${round(by - 3)}`, {
+      stroke: CHART_INK.axis, strokeWidth: 1.3,
+    }));
+    body.push(path(`M ${round(bx + 1)} ${round(by + 3)} L ${round(bx + 5)} ${round(by - 3)}`, {
+      stroke: CHART_INK.axis, strokeWidth: 1.3,
+    }));
+  }
+
+  // Period axis: a tick for every period, a label where it fits.
+  const shortPeriod = (period: string) => period.replace(/\s*-\s*/g, '–');
+  // Greedy placement on real extents (anchor included): keep a label only if it
+  // clears the previous kept one; the last period is always labelled, displacing
+  // its neighbour if they would touch.
+  const lastIndex = periods.length - 1;
+  const anchorOf = (index: number): 'start' | 'middle' | 'end' =>
+    periods.length === 1 ? 'middle' : index === 0 ? 'start' : index === lastIndex ? 'end' : 'middle';
+  const extent = (index: number): [number, number] => {
+    const px = margin.left + index * xStep;
+    const w = textWidth(shortPeriod(periods[index]), scale.small) * 1.08;
+    const anchor = anchorOf(index);
+    return anchor === 'start' ? [px, px + w] : anchor === 'end' ? [px - w, px] : [px - w / 2, px + w / 2];
+  };
+  const labelGap = 12;
+  const kept: number[] = [];
+  periods.forEach((_, index) => {
+    const previous = kept[kept.length - 1];
+    if (previous === undefined || extent(index)[0] >= extent(previous)[1] + labelGap) kept.push(index);
+  });
+  if (lastIndex > 0 && kept[kept.length - 1] !== lastIndex) {
+    while (kept.length > 1 && extent(lastIndex)[0] < extent(kept[kept.length - 1])[1] + labelGap) kept.pop();
+    kept.push(lastIndex);
+  }
+  const labelled = new Set(kept);
+  periods.forEach((period, index) => {
+    const px = margin.left + index * xStep;
+    const isLabelled = labelled.has(index);
+    body.push(line(px, plotBottom, px, plotBottom + (isLabelled ? 5 : 3), {
+      stroke: CHART_INK.axis, strokeWidth: 1,
+    }));
+    if (!isLabelled) return;
+    body.push(text(shortPeriod(period), {
+      x: px, y: plotBottom + scale.small * 1.9, size: scale.small, fill: CHART_INK.axis,
+      anchor: anchorOf(index),
+    }));
+  });
+
+  let belowAxis = plotBottom + scale.small * 2.4;
+  if (options.pooledYears > 1) {
+    belowAxis += scale.small * 1.3;
+    body.push(text(`Rolling ${options.pooledYears}-year pooled periods — neighbouring points share years of data`, {
+      x: margin.left, y: belowAxis, size: scale.small, fill: CHART_INK.mutedText,
+    }));
+  }
+
   for (const breakPoint of options.methodologyBreaks ?? []) {
     const bx = xOf(breakPoint.period);
     if (bx === null) continue;
-    body.push(
-      line(bx, plotTop, bx, plotTop + plotHeight, {
-        stroke: '#8a5a1b', strokeWidth: 1.2, dash: '2 3',
-      }),
-    );
-    body.push(
-      text('methodology change', {
-        x: bx + 3, y: plotTop + scale.small * 1.2, size: scale.small * 0.88, fill: '#8a5a1b',
-      }),
-    );
+    body.push(line(bx, plotTop, bx, plotBottom, { stroke: '#8a5a1b', strokeWidth: 1.2, dash: '2 3' }));
+    body.push(text('methodology change', {
+      x: bx + 3, y: plotTop + scale.small * 1.2, size: scale.small * 0.88, fill: '#8a5a1b',
+    }));
   }
 
+  // Bands first, so every line sits above every band.
   for (const series of options.series) {
-    // Intervals as a band, only where published.
-    if (options.showIntervals) {
-      let bandRuns: { x: number; lo: number; hi: number }[] = [];
-      const flushBand = () => {
-        if (bandRuns.length > 1) {
-          const forward = bandRuns.map((p) => `${round(p.x)},${round(y(p.hi))}`).join(' L ');
-          const back = [...bandRuns].reverse()
-            .map((p) => `${round(p.x)},${round(y(p.lo))}`).join(' L ');
-          body.push(
-            path(`M ${forward} L ${back} Z`, { fill: series.colour, opacity: 0.14 }),
-          );
-        }
-        bandRuns = [];
-      };
-      for (const point of series.points) {
-        const px = xOf(point.period);
-        if (px === null || !hasInterval(point.observation)) { flushBand(); continue; }
-        bandRuns.push({
-          x: px, lo: point.observation.lowerCi95, hi: point.observation.upperCi95,
-        });
-      }
-      flushBand();
-    }
-
-    // The line itself, broken wherever a value is absent.
-    let run: string[] = [];
-    const flushRun = () => {
+    if (!bandOf(series)) continue;
+    let run: { x: number; lo: number; hi: number }[] = [];
+    const flush = () => {
       if (run.length > 1) {
-        body.push(
-          path(`M ${run.join(' L ')}`, {
-            stroke: series.colour, strokeWidth: 2, fill: 'none',
-            ...(series.dashed ? {} : {}),
-          }).replace('<path ', series.dashed ? '<path stroke-dasharray="5 3" ' : '<path '),
-        );
+        const upper = run.map((p) => `${round(p.x)},${round(y(p.hi))}`).join(' L ');
+        const lower = [...run].reverse().map((p) => `${round(p.x)},${round(y(p.lo))}`).join(' L ');
+        body.push(path(`M ${upper} L ${lower} Z`, {
+          fill: series.colour, opacity: series.dashed ? 0.1 : 0.16,
+        }));
       } else if (run.length === 1) {
-        const [cx, cy] = run[0].split(',').map(Number);
-        body.push(circle(cx, cy, 2.6, { fill: series.colour }));
+        const p = run[0];
+        body.push(line(p.x, y(p.lo), p.x, y(p.hi), { stroke: series.colour, strokeWidth: 3, opacity: 0.25 }));
       }
       run = [];
     };
     for (const point of series.points) {
       const px = xOf(point.period);
-      if (px === null || !isPresent(point.observation)) { flushRun(); continue; }
-      run.push(`${round(px)},${round(y(point.observation.value))}`);
+      if (px === null || !hasInterval(point.observation)) { flush(); continue; }
+      run.push({ x: px, lo: point.observation.lowerCi95, hi: point.observation.upperCi95 });
     }
-    flushRun();
+    flush();
+  }
 
+  // Reference (dashed) lines underneath, then observed lines with the first
+  // series — the reader's selected area — drawn last, on top.
+  const drawOrder = [
+    ...options.series.filter((s) => s.dashed),
+    ...options.series.filter((s) => !s.dashed).reverse(),
+  ];
+  const showMarkers = periods.length <= 12;
+  for (const series of drawOrder) {
+    const strokeWidth = series.dashed ? 1.6 : series === options.series[0] ? 2.4 : 1.9;
+    let run: [number, number][] = [];
+    const flush = () => {
+      if (run.length > 1) {
+        const d = `M ${run.map(([px, py]) => `${round(px)},${round(py)}`).join(' L ')}`;
+        const drawn = path(d, { stroke: series.colour, strokeWidth, fill: 'none' });
+        body.push(series.dashed ? drawn.replace('<path ', '<path stroke-dasharray="5 3" ') : drawn);
+      } else if (run.length === 1) {
+        // An isolated value is a point, never an implied line.
+        body.push(circle(run[0][0], run[0][1], 2.8, { fill: series.colour }));
+      }
+      run = [];
+    };
     for (const point of series.points) {
       const px = xOf(point.period);
-      if (px === null || !isPresent(point.observation)) continue;
-      body.push(
-        circle(px, y(point.observation.value), 2.6, {
+      if (px === null || !isPresent(point.observation)) { flush(); continue; }
+      run.push([px, y(point.observation.value)]);
+      if (showMarkers) {
+        body.push(circle(px, y(point.observation.value), 2.2, {
           fill: series.colour, stroke: '#ffffff', strokeWidth: 0.8,
-        }),
-      );
+        }));
+      }
+    }
+    flush();
+  }
+
+  // Direct labels, spread vertically so they never overlap.
+  const placed = ends
+    .filter((end) => end.last !== null)
+    .map((end) => {
+      const pointX = xOf(end.last!.period) ?? plotRight;
+      const pointY = y(end.last!.value);
+      return { ...end, pointX, pointY, labelY: pointY };
+    })
+    .sort((a, b) => a.pointY - b.pointY);
+  const minGap = labelSize * 1.3;
+  for (let i = 1; i < placed.length; i += 1) {
+    if (placed[i].labelY - placed[i - 1].labelY < minGap) {
+      placed[i].labelY = placed[i - 1].labelY + minGap;
     }
   }
-
-  // Legend.
-  let legendX = margin.left;
-  const legendY = plotTop + plotHeight + scale.small * 3.9;
-  for (const series of options.series) {
-    body.push(line(legendX, legendY - 3, legendX + 16, legendY - 3, {
-      stroke: series.colour, strokeWidth: 2, dash: series.dashed ? '5 3' : undefined,
-    }));
-    body.push(text(series.label, {
-      x: legendX + 21, y: legendY, size: scale.small, fill: '#334155',
-    }));
-    legendX += 30 + series.label.length * scale.small * 0.52;
+  const overflow = placed.length > 0 ? placed[placed.length - 1].labelY - (plotBottom + labelSize * 0.4) : 0;
+  if (overflow > 0) {
+    for (const item of placed) item.labelY -= overflow;
+    for (let i = placed.length - 2; i >= 0; i -= 1) {
+      if (placed[i + 1].labelY - placed[i].labelY < minGap) {
+        placed[i].labelY = placed[i + 1].labelY - minGap;
+      }
+    }
   }
-
-  const caveatY = legendY + scale.small * 1.7;
-  const caveats: string[] = [];
-  if (options.pooledYears > 1) {
-    caveats.push(
-      `Periods are rolling ${options.pooledYears}-year pooled estimates; consecutive points ` +
-        'overlap and are not independent observations.',
+  for (const item of placed) {
+    const labelX = plotRight + 8;
+    if (Math.abs(item.labelY - item.pointY) > 2 || item.pointX < plotRight - 1) {
+      body.push(line(item.pointX + 3, item.pointY, labelX - 3, item.labelY, {
+        stroke: item.series.colour, strokeWidth: 0.8, opacity: 0.6,
+      }));
+    }
+    const valueString = formatValue(item.last!.value, indicator);
+    const nameSpace = margin.right - 8 - textWidth(valueString, labelSize) - 6;
+    const name = truncateToWidth(item.series.label, Math.max(24, nameSpace), labelSize);
+    body.push(
+      `<text x="${round(labelX)}" y="${round(item.labelY + labelSize * 0.36)}" ` +
+        `font-family="'IBM Plex Sans', Helvetica, Arial, sans-serif" font-size="${labelSize}">` +
+        `<tspan font-weight="600" fill="${inkFor(item.series.colour)}">${escapeXml(name)}</tspan>` +
+        `<tspan dx="5" fill="${CHART_INK.mutedText}">${escapeXml(valueString)}</tspan></text>`,
     );
   }
-  caveats.push('Breaks in a line indicate periods with no published value, not zero values.');
-  const caveatBlock = paragraph(caveats.join(' '), {
-    x: 0, y: caveatY, size: scale.small, fill: '#64748b', maxWidth: width,
-    lineHeight: scale.small * 1.36,
-  });
-  body.push(caveatBlock.svg);
 
-  const footerBlock = footer(
-    options.notes, 0, caveatY + caveatBlock.height + 4, width, scale.small,
-  );
-  const height = caveatY + caveatBlock.height + 4 + footerBlock.height + 10;
-
-  const content = [...header, group(body.join('\n')), footerBlock.svg].join('\n');
-  if (options.standalone === false) {
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${round(height)}" viewBox="0 0 ${width} ${round(height)}" role="img" aria-label="${escapeXml(options.title)}">${content}</svg>`;
+  // Drawn key: band and gap, as marks rather than prose.
+  const keyY = belowAxis + scale.small * 1.9;
+  const keyFragments: string[] = [];
+  let keyX = 0;
+  if (options.series.some(bandOf)) {
+    keyFragments.push(rect(keyX, keyY - scale.small * 0.85, 16, scale.small, { fill: CHART_INK.series, opacity: 0.16 }));
+    keyFragments.push(line(keyX, keyY - scale.small * 0.35, keyX + 16, keyY - scale.small * 0.35, { stroke: CHART_INK.series, strokeWidth: 1.6 }));
+    keyFragments.push(text('95% confidence interval', { x: keyX + 21, y: keyY, size: scale.small, fill: '#475569' }));
+    keyX += 21 + textWidth('95% confidence interval', scale.small) + 18;
   }
-  return svgDocument(content, {
-    width, height: round(height), title: options.title,
-    description: `${options.subtitle}. ${options.periods.length} periods.`,
+  // The gap key appears only when a line really has a gap. Its glyph is two
+  // solid segments with round ends and a wide break, so it cannot be read as a
+  // dashed line like England's.
+  const hasGap = options.series.some((series) => {
+    const states = series.points.map((point) => isPresent(point.observation));
+    const first = states.indexOf(true);
+    const last = states.lastIndexOf(true);
+    return first >= 0 && states.slice(first, last + 1).includes(false);
   });
+  const gapLabel = 'Break in a line: no published value (not zero)';
+  if (hasGap) {
+    if (keyX > 0 && keyX + 30 + textWidth(gapLabel, scale.small) > width) {
+      keyX = 0;
+      keyFragments.push(`<g transform="translate(0, ${round(scale.small * 1.6)})">`);
+    }
+    const gy = keyY - scale.small * 0.35;
+    keyFragments.push(line(keyX, gy, keyX + 7, gy, { stroke: CHART_INK.series, strokeWidth: 2 }));
+    keyFragments.push(circle(keyX + 7, gy, 1.8, { fill: CHART_INK.series }));
+    keyFragments.push(circle(keyX + 17, gy, 1.8, { fill: CHART_INK.series }));
+    keyFragments.push(line(keyX + 17, gy, keyX + 24, gy, { stroke: CHART_INK.series, strokeWidth: 2 }));
+    keyFragments.push(text(gapLabel, { x: keyX + 30, y: keyY, size: scale.small, fill: '#475569' }));
+    if (keyFragments.some((fragment) => fragment.startsWith('<g transform'))) keyFragments.push('</g>');
+  }
+  const keyRows = keyFragments.some((fragment) => fragment.startsWith('<g transform')) ? 2 : 1;
+  body.push(...keyFragments);
+
+  const keyBottom = keyY + scale.small * (keyFragments.length > 0 ? 1.2 + (keyRows - 1) * 1.6 : 0);
+  const footerBlock = footer(options.notes, 0, keyBottom, width, scale.small);
+  const height = keyBottom + footerBlock.height + 8;
+
+  const content = [...header.svg, group(body.join('\n')), footerBlock.svg].join('\n');
+  return wrapSvg(
+    content, width, height, options.standalone, options.title,
+    `${options.subtitle}. ${periods.length} periods.` +
+      (broken ? ` The value axis starts at ${tickLabels[0]}, not zero.` : ''),
+  );
 }
 
 // ---------------------------------------------------------------------------

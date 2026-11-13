@@ -36,8 +36,11 @@ export const NON_DATA_STYLES = {
   missing: { fill: '#f0efed', stroke: '#c9c6c0', pattern: 'none' as const },
   /** Withheld by the publisher under disclosure control. */
   suppressed: { fill: '#e3e1dd', stroke: '#a3a099', pattern: 'hatch' as const },
-  /** Nation not covered by the selected dataset. */
-  outsideCoverage: { fill: '#f8f8f7', stroke: '#c9c6c0', pattern: 'diagonal' as const },
+  /**
+   * Nation not covered by the selected dataset. Context only: the map is fitted
+   * to the covered nation, so these appear as faint edges plus a locator inset.
+   */
+  outsideCoverage: { fill: '#f8f8f7', stroke: '#dcd9d4', pattern: 'diagonal' as const },
   /** Geography type does not exist here. */
   notApplicable: { fill: '#ffffff', stroke: '#e3e1dd', pattern: 'none' as const },
 } as const;
@@ -56,15 +59,42 @@ export const SELECTION = {
   stroke: '#a9791f',
   strokeWidth: 2.25,
   comparisonStrokes: ['#a9791f', '#0f766e', '#86198f', '#9a3412'],
+  /** Darker brass for text: #a9791f passes 3:1 for marks but not 4.5:1 for type. */
+  text: '#7a5414',
+  /** Row highlight behind the selected area in ranked charts. */
+  rowWash: '#f6eedf',
 } as const;
 
+/**
+ * The one ordering every view uses to colour selected and compared areas:
+ * the selected area first (brass), then compared areas in the order they were
+ * added, without repeating the selected one. Map outline, trend line and
+ * ranking row for the same place therefore always share a colour.
+ */
+export function selectionOrder(
+  selectedCode: string | null,
+  comparisonCodes: readonly string[],
+): string[] {
+  return [
+    ...(selectedCode ? [selectedCode] : []),
+    ...comparisonCodes.filter((code) => code !== selectedCode),
+  ];
+}
+
+export function selectionColour(index: number): string {
+  return SELECTION.comparisonStrokes[index % SELECTION.comparisonStrokes.length];
+}
+
 export const CHART_INK = {
-  axis: '#767370',
-  grid: '#e3e1dd',
+  axis: '#6b6864',
+  grid: '#e7e5e1',
   text: '#001734',
   mutedText: '#585551',
-  /** Benchmark is brass and dashed: a reference, not another observation. */
-  benchmark: '#8a5f17',
+  /**
+   * England is charcoal and dashed: a reference, not another observation. It is
+   * deliberately not brass, which belongs to the reader's selected area.
+   */
+  benchmark: '#3f3c39',
   series: '#002147',
   interval: '#9cb6d3',
 } as const;

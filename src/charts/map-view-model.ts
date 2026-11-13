@@ -4,7 +4,11 @@ import type { Observation } from '@/data/schemas/observation';
 import { isPresent } from '@/data/schemas/observation';
 import type { Classification } from '@/data/selectors/classification';
 import { classOf } from '@/data/selectors/classification';
-import { sequentialRamp, NON_DATA_STYLES, SELECTION, type NonDataStyleKey } from './palette';
+import {
+  sequentialRamp, NON_DATA_STYLES, SELECTION, selectionOrder, selectionColour,
+  type NonDataStyleKey,
+} from './palette';
+import { rankByValue, rankLookup } from '@/data/selectors/ranking';
 import { formatWithUnit, formatInterval } from '@/data/selectors/format';
 import type { AreaRegistry } from '@/geography/model';
 
@@ -82,6 +86,7 @@ function describeArea(
   observation: Observation | undefined,
   render: AreaRenderState,
   periodLabel: string,
+  rank: { rank: number; total: number } | null,
 ): string {
   if (render.kind === 'value' && isPresent(observation)) {
     const parts = [
@@ -94,6 +99,9 @@ function describeArea(
     }
     if (observation.count !== null && indicator.countIsMeaningful) {
       parts.push(`count ${observation.count.toLocaleString('en-GB')}`);
+    }
+    if (rank) {
+      parts.push(`rank ${rank.rank} of ${rank.total} (1 = highest value)`);
     }
     return parts.join('; ');
   }
@@ -108,6 +116,14 @@ export function buildMapViewModel(input: BuildMapViewModelInput): MapViewModel {
 
   const ramp = classification ? sequentialRamp(classification.classCount) : [];
   const nationsWithData = new Set(manifest.coverage.nationsWithData);
+  const order = selectionOrder(selectedAreaCode, comparisonAreaCodes);
+
+  // Ranks are taken over covered areas only: an uncovered nation is never ranked.
+  const coveredObservations = [...observationsByArea.values()].filter((observation) =>
+    nationsWithData.has(registry.get(observation.areaCode)?.nation ?? ''),
+  );
+  const ranks = rankLookup(rankByValue(coveredObservations));
+  const rankTotal = ranks.size;
 
   let withValue = 0;
   let missing = 0;
@@ -163,9 +179,10 @@ export function buildMapViewModel(input: BuildMapViewModelInput): MapViewModel {
       };
     }
 
-    const comparisonIndex = comparisonAreaCodes.indexOf(area.code);
+    const orderIndex = order.indexOf(area.code);
     const isSelected = area.code === selectedAreaCode;
-    const selectionIndex = isSelected ? 0 : comparisonIndex >= 0 ? comparisonIndex + 1 : null;
+    const selectionIndex = orderIndex >= 0 ? orderIndex : null;
+    const rank = render.kind === 'value' ? ranks.get(area.code) : undefined;
 
     return {
       code: area.code,
@@ -178,16 +195,17 @@ export function buildMapViewModel(input: BuildMapViewModelInput): MapViewModel {
       // legend says it means, so an outline can never be read as a value.
       stroke:
         selectionIndex !== null
-          ? SELECTION.comparisonStrokes[
-              selectionIndex % SELECTION.comparisonStrokes.length
-            ]
+          ? selectionColour(selectionIndex)
           : render.kind === 'non-data'
             ? NON_DATA_STYLES[render.style].stroke
             : '#ffffff',
       strokeWidth: selectionIndex !== null ? SELECTION.strokeWidth : 0.5,
       selectionIndex,
       isSelected,
-      description: describeArea(area.name, indicator, observation, render, periodLabel),
+      description: describeArea(
+        area.name, indicator, observation, render, periodLabel,
+        rank !== undefined ? { rank, total: rankTotal } : null,
+      ),
     };
   });
 

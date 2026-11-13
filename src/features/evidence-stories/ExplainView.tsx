@@ -12,11 +12,12 @@ import { AreaSearch } from '@/components/common/AreaSearch';
 import { InlineSvgChart } from '@/charts/InlineSvgChart';
 import { renderMapSvg } from '@/export/map-svg';
 import { renderDotWhiskerSvg, renderTimeSeriesSvg } from '@/export/chart-svg';
+import { buildTrendLines } from '@/charts/trend-lines';
 import { LoadingState, ErrorState, EmptyState, UnsupportedState } from '@/components/common/states';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/misc';
 import { isPresent } from '@/data/schemas/observation';
-import { CHART_INK, SELECTION } from '@/charts/palette';
+import { SELECTION } from '@/charts/palette';
 import { AreaTable } from '@/components/common/AreaTable';
 
 /**
@@ -280,41 +281,16 @@ function ExplainBody({
               <InlineSvgChart
                 render={(width) =>
                   renderTimeSeriesSvg({
-                    series: [
-                      {
-                        label: selectedArea.name,
-                        colour: SELECTION.stroke,
-                        points: analysis.periodSeries.periods.map((period) => ({
-                          period,
-                          observation:
-                            observations.byArea.get(selectedArea.code)?.get(period) ??
-                            ({
-                              areaCode: selectedArea.code, period,
-                              sex: observations.sex, age: observations.age,
-                              categoryType: null, category: null, state: 'missing' as const,
-                              significance: 'not-compared' as const,
-                              trend: 'not-available' as const, note: null,
-                            }),
-                        })),
-                      },
-                      {
-                        label: 'England',
-                        colour: CHART_INK.benchmark,
-                        dashed: true,
-                        points: analysis.periodSeries.periods.map((period) => ({
-                          period,
-                          observation:
-                            observations.benchmarkByPeriod.get(period) ??
-                            ({
-                              areaCode: 'E92000001', period,
-                              sex: observations.sex, age: observations.age,
-                              categoryType: null, category: null, state: 'missing' as const,
-                              significance: 'not-compared' as const,
-                              trend: 'not-available' as const, note: null,
-                            }),
-                        })),
-                      },
-                    ],
+                    series: buildTrendLines({
+                      observations,
+                      sex: analysis.sex,
+                      periods: analysis.periodSeries.periods,
+                      areas: [{
+                        code: selectedArea.code, label: selectedArea.name,
+                        colour: SELECTION.stroke, showInterval: true,
+                      }],
+                      benchmark: { label: 'England', areaCode: 'E92000001', showInterval: true },
+                    }),
                     periods: analysis.periodSeries.periods,
                     indicator, title: '', subtitle: '', notes: null,
                     showIntervals: true, pooledYears: analysis.periodSeries.years,

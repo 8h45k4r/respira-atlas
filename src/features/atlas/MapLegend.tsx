@@ -90,8 +90,9 @@ export function MapLegend({
         {viewModel.classificationNote}
       </p>
       <p className="font-figure text-2xs leading-relaxed text-slate-500">
-        A selected area is marked by a dark outline. The outline does not change
-        what the fill colour means.
+        The selected area has a brass outline, and compared areas teal, purple or
+        rust ones, in the same colours as their lines and rows in the charts. An
+        outline never changes what the fill colour means.
       </p>
     </div>
   );

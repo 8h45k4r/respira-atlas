@@ -340,13 +340,14 @@ function ExploreBody({
                 onSelect={onSelectArea}
                 layerKey={selection.areaType.key}
                 ariaLabel={`${analysis.question} ${analysis.viewModel.subtitle}`}
+                coveredLabel={selection.indicator.coverage.nations.join(' and ')}
                 height={520}
               />
               <MapLegend viewModel={analysis.viewModel} indicator={selection.indicator} />
             </div>
           </FigureFrame>
 
-          <div className="grid gap-2 xl:grid-cols-2">
+          <div className="grid items-start gap-2 xl:grid-cols-2">
             <TrendFigure
               catalogue={catalogue}
               selection={selection}
@@ -362,6 +363,7 @@ function ExploreBody({
               state={state}
               registry={registry}
               onSelect={onSelectArea}
+              onChange={onChange}
             />
           </div>
 

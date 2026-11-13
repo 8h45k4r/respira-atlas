@@ -177,19 +177,55 @@ export interface ObservationSet {
     readonly label: string;
     readonly observations: readonly Observation[];
   };
-  /** areaCode -> period -> observation */
-  readonly byArea: ReadonlyMap<string, ReadonlyMap<string, Observation>>;
-  readonly benchmarkByPeriod: ReadonlyMap<string, Observation>;
+  /**
+   * sex -> areaCode -> period -> observation.
+   *
+   * Keyed by sex first because some measures (life expectancy) publish only
+   * separate series per sex. An index keyed on area and period alone would hold
+   * whichever sex happened to be decoded last, and a trend line would silently
+   * mix the two populations. Read it through `seriesFor`.
+   */
+  readonly bySexAreaPeriod: ReadonlyMap<string, ReadonlyMap<string, ReadonlyMap<string, Observation>>>;
+  /** sex -> period -> benchmark observation. Read it through `benchmarkSeriesFor`. */
+  readonly benchmarkBySexPeriod: ReadonlyMap<string, ReadonlyMap<string, Observation>>;
 }
 
-function indexByAreaAndPeriod(observations: readonly Observation[]) {
-  const map = new Map<string, Map<string, Observation>>();
+function indexBySexAreaPeriod(observations: readonly Observation[]) {
+  const map = new Map<string, Map<string, Map<string, Observation>>>();
   for (const o of observations) {
-    let periods = map.get(o.areaCode);
-    if (!periods) { periods = new Map(); map.set(o.areaCode, periods); }
+    let areas = map.get(o.sex);
+    if (!areas) { areas = new Map(); map.set(o.sex, areas); }
+    let periods = areas.get(o.areaCode);
+    if (!periods) { periods = new Map(); areas.set(o.areaCode, periods); }
     periods.set(o.period, o);
   }
   return map;
+}
+
+function indexBySexPeriod(observations: readonly Observation[]) {
+  const map = new Map<string, Map<string, Observation>>();
+  for (const o of observations) {
+    let periods = map.get(o.sex);
+    if (!periods) { periods = new Map(); map.set(o.sex, periods); }
+    periods.set(o.period, o);
+  }
+  return map;
+}
+
+const EMPTY_SERIES: ReadonlyMap<string, Observation> = new Map();
+
+/** One area's observations by period, for one published sex category. */
+export function seriesFor(
+  set: ObservationSet, areaCode: string, sex: string,
+): ReadonlyMap<string, Observation> {
+  return set.bySexAreaPeriod.get(sex)?.get(areaCode) ?? EMPTY_SERIES;
+}
+
+/** The benchmark's observations by period, for one published sex category. */
+export function benchmarkSeriesFor(
+  set: ObservationSet, sex: string,
+): ReadonlyMap<string, Observation> {
+  return set.benchmarkBySexPeriod.get(sex) ?? EMPTY_SERIES;
 }
 
 export async function loadObservations(
@@ -232,8 +268,8 @@ export async function loadObservations(
       label: raw.benchmark.label,
       observations: benchmark,
     },
-    byArea: indexByAreaAndPeriod(observations),
-    benchmarkByPeriod: new Map(benchmark.map((o) => [o.period, o])),
+    bySexAreaPeriod: indexBySexAreaPeriod(observations),
+    benchmarkBySexPeriod: indexBySexPeriod(benchmark),
   };
 }
 
