@@ -281,6 +281,7 @@ export function useAnalysis({
             previousPeriod,
             sex,
             age: observations.age,
+            flagLevel: observations.flagLevel,
           } satisfies EvidenceContext,
           areaType.boundaryVintage,
         )

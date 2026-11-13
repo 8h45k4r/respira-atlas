@@ -13,6 +13,7 @@ import {
   rankByValue, rankLookup, rankWindow, rankExtremes, type RankedEntry,
 } from '@/data/selectors/ranking';
 import { selectionOrder } from '@/charts/palette';
+import { intervalAt } from '@/data/selectors/flag-level';
 import { downloadSvg } from '@/export/download';
 import { cn, slug } from '@/lib/utils';
 
@@ -154,6 +155,12 @@ export function ComparisonFigure({
     return [...fromEntries(merged), ...unranked(selectedCode)];
   }, [ranked, analysis.observationsForPeriod, codes, registry, selectedCode, view]);
 
+  // Draw the interval the publisher's flag follows, so a bar and its dot can
+  // never disagree. Only an exact match is trusted; otherwise 95% is drawn and
+  // the caveat says the flag does not follow either interval exactly.
+  const { flagLevel } = observations;
+  const intervalLevel = flagLevel.basis === 'exact' && flagLevel.level ? flagLevel.level : 95;
+
   const benchmark = isPresent(analysis.benchmarkObservation)
     ? analysis.benchmarkObservation
     : null;
@@ -179,18 +186,25 @@ export function ComparisonFigure({
         rows, indicator, benchmark,
         benchmarkLabel: 'England', title, subtitle, notes: null,
         width, standalone: false, encodeSignificance: true,
-        rankTotal: ranked.length, interactive: true,
+        rankTotal: ranked.length, interactive: true, intervalLevel,
       }),
-    [rows, indicator, benchmark, title, subtitle, ranked.length],
+    [rows, indicator, benchmark, title, subtitle, ranked.length, intervalLevel],
   );
 
+  const flagCaveat =
+    flagLevel.basis === 'exact' && intervalLevel === 99.8
+      ? 'Bars are 99.8% intervals: the publisher tests this measure against England at ' +
+        '99.8%, so a bar crossing the England line always has a hollow dot. '
+      : flagLevel.basis === 'exact'
+        ? 'Bars are 95% intervals, the level the publisher’s England flag uses, so a bar ' +
+          'crossing the England line always has a hollow dot. '
+        : flagLevel.basis === 'approximate'
+          ? 'Bars are 95% intervals. The publisher’s flag does not follow either published ' +
+            'interval exactly for this measure, so a dot’s fill and its bar can disagree. '
+          : 'Bars are 95% intervals. ';
   const limitation = hasIntervals
-    ? 'Bars are the published 95% confidence intervals. A solid dot means the publisher ' +
-      'flags the area as statistically different from England using its own test, which ' +
-      'for some measures uses a 99.8% level, so a hollow dot can sit beside a 95% bar that ' +
-      'misses England. Overlapping intervals are not a significance test and non-overlap is ' +
-      'not proof of a difference. Ordering areas by value does not make a performance ' +
-      'league table: neighbouring areas are usually not distinguishable from one another.'
+    ? flagCaveat +
+      'Overlapping intervals are not a significance test. Rank is position, not performance.'
     : 'No confidence intervals are published for this indicator at this geography, so the ' +
       'precision of each estimate is unknown.';
 
@@ -265,7 +279,7 @@ export function ComparisonFigure({
           renderDotWhiskerSvg({
             rows, indicator, benchmark, benchmarkLabel: 'England',
             title, subtitle, notes: analysis.notes, width: 900,
-            encodeSignificance: true, rankTotal: ranked.length,
+            encodeSignificance: true, rankTotal: ranked.length, intervalLevel,
           }),
           `${slug(indicator.shortName)}-comparison-${slug(analysis.period)}`,
         )
@@ -278,9 +292,12 @@ export function ComparisonFigure({
             isPresent(row.observation)
               ? `${row.rank !== null && row.rank !== undefined ? `Rank ${row.rank}, ` : ''}` +
                 `${row.areaName}: ${row.observation.value}` +
-                (row.observation.lowerCi95 !== null
-                  ? `, 95% CI ${row.observation.lowerCi95} to ${row.observation.upperCi95}`
-                  : ', no interval published') +
+                (() => {
+                  const interval = intervalAt(row.observation, intervalLevel);
+                  return interval
+                    ? `, ${intervalLevel}% CI ${interval.lower} to ${interval.upper}`
+                    : `, no ${intervalLevel}% interval published`;
+                })() +
                 (row.observation.significance !== 'not-compared'
                   ? `, publisher flag ${row.observation.significance}`
                   : '')

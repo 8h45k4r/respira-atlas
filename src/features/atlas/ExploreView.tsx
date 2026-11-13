@@ -389,6 +389,8 @@ function ExploreBody({
             <AreaDetailPanel
               area={selectedArea}
               observation={analysis.selectedObservation}
+              benchmark={analysis.benchmarkObservation}
+              flagLevel={observations.flagLevel}
               indicator={selection.indicator}
               evidence={analysis.evidence}
               period={analysis.period}

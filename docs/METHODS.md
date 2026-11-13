@@ -29,6 +29,15 @@ producing a number that looks valid.
   99.8% where supplied. **No interval is ever derived from a rate.**
 - Significance against England uses the **publisher's own flag**. This product
   computes no significance test of its own.
+- **The interval drawn beside the flag is the one the flag follows.** The
+  publisher flags an area as different from England when England's value lies
+  outside the area's interval, but not always at 95%: hypertension (219),
+  depression (848) and asthma (90933) prevalence are tested at 99.8%. The level
+  is not in the retrieved metadata, so it is read from the data when each file
+  loads (`src/data/selectors/flag-level.ts`): it is the level at which flag and
+  interval agree for every compared area. Rankings then draw that interval, and
+  the evidence statement names it. If no level agrees everywhere, 95% is drawn
+  and the figure says the flag does not follow either interval exactly.
 - **Overlapping intervals are not treated as a significance test**, and
   non-overlap is not treated as proof of a difference. Both are reported as
   descriptions of the intervals, with that caveat attached.

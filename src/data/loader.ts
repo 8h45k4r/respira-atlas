@@ -1,4 +1,5 @@
 import { manifestSchema, coverageSchema, indicatorSchema, type Manifest, type Coverage, type Indicator } from './schemas/manifest';
+import { inferFlagLevel, type FlagLevel } from './selectors/flag-level';
 import {
   boundaryLayerSchema, searchIndexSchema, settlementIndexSchema, observationFileSchema,
   type BoundaryLayer, type SearchIndex,
@@ -188,6 +189,8 @@ export interface ObservationSet {
   readonly bySexAreaPeriod: ReadonlyMap<string, ReadonlyMap<string, ReadonlyMap<string, Observation>>>;
   /** sex -> period -> benchmark observation. Read it through `benchmarkSeriesFor`. */
   readonly benchmarkBySexPeriod: ReadonlyMap<string, ReadonlyMap<string, Observation>>;
+  /** The interval level the publisher's England flag follows in this file. */
+  readonly flagLevel: FlagLevel;
 }
 
 function indexBySexAreaPeriod(observations: readonly Observation[]) {
@@ -270,6 +273,7 @@ export async function loadObservations(
     },
     bySexAreaPeriod: indexBySexAreaPeriod(observations),
     benchmarkBySexPeriod: indexBySexPeriod(benchmark),
+    flagLevel: inferFlagLevel(observations, benchmark),
   };
 }
 

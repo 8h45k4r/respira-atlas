@@ -137,7 +137,7 @@ The prepared dataset is committed, so the app runs offline with no API access.
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` | Production build to `dist/` |
-| `npm test` | 106 unit tests |
+| `npm test` | 116 unit tests |
 | `npm run smoke` | 29 browser tests against the production build |
 | `npm run data:validate` | Checks the committed dataset for violations |
 | `npm run data:prepare` | Re-fetches everything from source (~3 minutes) |
@@ -146,7 +146,7 @@ The prepared dataset is committed, so the app runs offline with no API access.
 
 All of the following were run and passed on the committed tree:
 
-- **106 unit tests** — classification and breakpoints, benchmark comparison,
+- **116 unit tests** — classification and breakpoints, benchmark comparison,
   comparability gating, the missing/suppressed/zero distinction, evidence-statement
   eligibility, URL round trips, columnar decode integrity, SVG export content,
   per-indicator axis rules, ranking, chart layout (no rotated text, direct

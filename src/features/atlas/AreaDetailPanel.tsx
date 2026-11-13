@@ -6,17 +6,20 @@ import type { AreaRecord } from '@/geography/model';
 import type { EvidenceStatement } from '@/data/selectors/evidence';
 import { formatWithUnit, formatInterval, formatCount } from '@/data/selectors/format';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/misc';
+import type { FlagLevel } from '@/data/selectors/flag-level';
+import { IntervalVsEngland } from './IntervalVsEngland';
 import { EvidencePanel } from '@/components/common/EvidencePanel';
 import { MAX_COMPARISON_AREAS } from '@/state/atlas-state';
 
 /** The pinned detail for a clicked area, linked to the map and table. */
 export function AreaDetailPanel({
-  area, observation, indicator, evidence, period, inComparison,
+  area, observation, benchmark, flagLevel, indicator, evidence, period, inComparison,
   comparisonCount, onClose, onToggleComparison,
 }: {
   area: AreaRecord;
   observation: Observation | undefined;
+  benchmark: Observation | undefined;
+  flagLevel: FlagLevel;
   indicator: Indicator;
   evidence: EvidenceStatement | null;
   period: string;
@@ -61,10 +64,13 @@ export function AreaDetailPanel({
                   : ''}
               </p>
             ) : null}
-            {observation.significance !== 'not-compared' ? (
-              <Badge tone="neutral" className="mt-1.5">
-                Publisher flag vs England: {observation.significance}
-              </Badge>
+            {isPresent(benchmark) ? (
+              <IntervalVsEngland
+                observation={observation}
+                england={benchmark}
+                indicator={indicator}
+                flagLevel={flagLevel}
+              />
             ) : null}
           </div>
         ) : (

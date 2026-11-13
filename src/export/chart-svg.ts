@@ -4,6 +4,7 @@ import { isPresent, hasInterval } from '@/data/schemas/observation';
 import { formatValue, unitLabel } from '@/data/selectors/format';
 import { CHART_INK, SELECTION, selectionColour } from '@/charts/palette';
 import { axisRuleFor, valueDomain } from '@/charts/axis-rules';
+import { intervalAt, type IntervalLevel } from '@/data/selectors/flag-level';
 import {
   svgDocument, text, rect, line, path, circle, group, paragraph,
   round, escapeXml,
@@ -208,6 +209,11 @@ export interface DotWhiskerOptions {
   readonly rankTotal?: number | null;
   /** Emit `data-area-code` hit targets so the page can make rows clickable. */
   readonly interactive?: boolean;
+  /**
+   * Which published interval to draw. With `encodeSignificance`, pass the level
+   * the publisher's flag follows (see `flag-level.ts`) so bar and dot agree.
+   */
+  readonly intervalLevel?: IntervalLevel;
 }
 
 type SignificanceGlyph = 'different' | 'similar' | 'not-compared';
@@ -256,9 +262,12 @@ export function renderDotWhiskerSvg(options: DotWhiskerOptions): string {
   const rankWidth = showRanks ? textWidth('000', valueSize) + 10 : 0;
   const labelWidth = Math.min(230, Math.max(120, width * 0.27));
 
+  const level = options.intervalLevel ?? 95;
+  const intervalOf = (row: DotWhiskerRow) =>
+    isPresent(row.observation) ? intervalAt(row.observation, level) : null;
   const valueText = (row: DotWhiskerRow): string => {
     if (!isPresent(row.observation)) return '';
-    return hasInterval(row.observation)
+    return intervalOf(row)
       ? formatValue(row.observation.value, indicator)
       : `${formatValue(row.observation.value, indicator)} (no interval)`;
   };
@@ -271,9 +280,8 @@ export function renderDotWhiskerSvg(options: DotWhiskerOptions): string {
   for (const row of rows) {
     if (isPresent(row.observation)) {
       values.push(row.observation.value);
-      if (hasInterval(row.observation)) {
-        values.push(row.observation.lowerCi95, row.observation.upperCi95);
-      }
+      const interval = intervalOf(row);
+      if (interval) values.push(interval.lower, interval.upper);
     }
   }
   if (options.benchmark) values.push(options.benchmark.value);
@@ -397,9 +405,10 @@ export function renderDotWhiskerSvg(options: DotWhiskerOptions): string {
       return;
     }
 
-    if (hasInterval(row.observation)) {
-      const x1 = margin.left + x(row.observation.lowerCi95);
-      const x2 = margin.left + x(row.observation.upperCi95);
+    const interval = intervalOf(row);
+    if (interval) {
+      const x1 = margin.left + x(interval.lower);
+      const x2 = margin.left + x(interval.upper);
       const weight = emphasised ? 2 : 1.3;
       body.push(line(x1, cy, x2, cy, { stroke: colour, strokeWidth: weight, opacity: emphasised ? 1 : 0.75 }));
       body.push(line(x1, cy - 3.5, x1, cy + 3.5, { stroke: colour, strokeWidth: weight, opacity: emphasised ? 1 : 0.75 }));
@@ -432,7 +441,10 @@ export function renderDotWhiskerSvg(options: DotWhiskerOptions): string {
       line(0, -keySize * 0.35, 18, -keySize * 0.35, { stroke: kc, strokeWidth: 1.3 }) +
       line(0, -keySize * 0.35 - 3.5, 0, -keySize * 0.35 + 3.5, { stroke: kc, strokeWidth: 1.3 }) +
       line(18, -keySize * 0.35 - 3.5, 18, -keySize * 0.35 + 3.5, { stroke: kc, strokeWidth: 1.3 }),
-    label: '95% confidence interval',
+    label:
+      level === 99.8 && options.encodeSignificance
+        ? '99.8% confidence interval, the level the publisher’s flag uses'
+        : `${level}% confidence interval`,
   });
   if (options.encodeSignificance) {
     if (glyphsUsed.has('different')) {
